@@ -20,6 +20,7 @@ class EdgeType(Enum):
     SRV = "SRV"
     PARENT = "PARENT" # Deduced parent
     NEIGHBOR = "NEIGHBOR" # IP Neighbor
+    SUBDOMAIN = "SUBDOMAIN" # Brute-forced subdomain
 
 @dataclass(frozen=True)
 class Node:
