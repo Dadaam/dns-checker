@@ -13,14 +13,6 @@ class BasicDNSStrategy(Strategy):
         'CNAME': (NodeType.DOMAIN, EdgeType.CNAME),
         'NS': (NodeType.DOMAIN, EdgeType.NS),
         'MX': (NodeType.DOMAIN, EdgeType.MX),
-        'TXT': (NodeType.DOMAIN, EdgeType.TXT), # TXT often contains domains/IPs, but node itself is just the text? 
-                                                # For graph simplicity, we might store TXT content as a "Service" or specialized node?
-                                                # User asked to PARSE TXT later. Here we just fetch.
-                                                # Let's treat raw TXT as a discrete node for now, or just don't yield a node yet? 
-                                                # Actually, better to yield a "RAW_DATA" node or similar?
-                                                # Re-reading: "Parse TXT" is a separate strategy.
-                                                # So here we fetch TXT, store it, and maybe the ParseTXT strategy reacts to it?
-                                                # Or this strategy fetches and yields the raw TXT string as a node.
     }
 
     def __init__(self):
