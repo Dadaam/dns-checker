@@ -48,39 +48,31 @@ class ScannerEngine:
                 return
             self.visited.add(node)
 
-        try:
-            for strategy in self.strategies:
-                try:
-                    # Strategies verify node type themselves
-                    for new_node, edge in strategy.execute(node):
-                        self.add_edge(edge, depth)
-                except Exception as e:
-                    print(f"Error in strategy {strategy.__class__.__name__} for {node}: {e}")
-        except Exception as e:
-             print(f"Error processing node {node}: {e}")
+        for strategy in self.strategies:
+            try:
+                for new_node, edge in strategy.execute(node):
+                    self.add_edge(edge, depth)
+            except Exception:
+                pass  # Strategy failures are silently ignored
 
     def start(self):
+        if self.running:
+            return
         self.running = True
-        # Use a separate thread to consume the queue and submit to the pool
-        # This prevents blocking the start() method or the TUI loop
-        self.dispatcher_thread = threading.Thread(target=self._dispatcher)
-        self.dispatcher_thread.daemon = True
-        self.dispatcher_thread.start()
+        self.worker_thread = threading.Thread(target=self._worker, daemon=True)
+        self.worker_thread.start()
 
-    def _dispatcher(self):
-        # We need a pool to execute strategies in parallel
-        # Max workers = 20 to handle multiple DNS queries concurrently
-        import concurrent.futures
-        with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
-            while self.running:
+    def _worker(self):
+        while self.running:
+            try:
+                task = self.queue.get(timeout=0.5)
                 try:
-                    task = self.queue.get(timeout=0.5)
-                    executor.submit(task)
-                    self.queue.task_done()
-                except queue.Empty:
-                    continue
-                except Exception as e:
-                    print(f"Dispatcher error: {e}")
+                    task()
+                except Exception:
+                    pass  # Task failures are silently ignored
+                self.queue.task_done()
+            except queue.Empty:
+                pass
 
     def stop(self):
         self.running = False
@@ -93,3 +85,11 @@ class ScannerEngine:
                 "queue": self.queue.qsize(),
                 "visited": len(self.visited)
             }
+
+    def reset(self):
+        with self.lock:
+            self.nodes.clear()
+            self.edges.clear()
+            self.visited.clear()
+            with self.queue.mutex:
+                self.queue.queue.clear()

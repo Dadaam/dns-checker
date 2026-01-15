@@ -17,14 +17,15 @@ class DNSScannerApp:
         self.root.setLayout(ttk.TTkVBoxLayout())
         self.engine = ScannerEngine(max_depth=3)
         
-        # Register Strategies
+        # Register Strategies (lightweight only by default)
         self.engine.register_strategy(BasicDNSStrategy())
         self.engine.register_strategy(TxtStrategy())
-        self.engine.register_strategy(SrvStrategy())
+        # Heavy strategies - commented out for performance:
+        # self.engine.register_strategy(SrvStrategy())
         self.engine.register_strategy(PtrStrategy())
         self.engine.register_strategy(ParentStrategy())
-        self.engine.register_strategy(NeighborStrategy())
-        self.engine.register_strategy(SubdomainStrategy())
+        # self.engine.register_strategy(NeighborStrategy())
+        # self.engine.register_strategy(SubdomainStrategy())
 
         self._init_ui()
         
@@ -78,15 +79,21 @@ class DNSScannerApp:
             return
 
         self.log(f"Starting scan: {domain} (Depth: {depth})")
+        
+        # Reset Engine
+        self.engine.stop() # Ensure previous workers stop if any
+        # Wait briefly for workers to potentialy exit? ThreadPool won't stop immediately but tasks will drain.
+        # Actually with ThreadPool we just clear the queue in reset().
+        self.engine.reset()
         self.engine.max_depth = depth
         
-        # Initialize with root node
-        # Detect if IP or Domain? Simple check.
-        # Ideally strategies handle type check, so we guess DOMAIN mostly.
-        # But if user enters IP...
-        # Let's assume Domain for simplicity unless it looks like IP.
-        # If IP strategy is robust, we can start with IP node.
-        # For now, default to DOMAIN.
+        # Reset UI State
+        self.added_nodes.clear()
+        self.tree.clear()
+        if hasattr(self, 'cat_items'):
+            self.cat_items.clear()
+            del self.cat_items 
+        
         root_node = Node(value=domain, type=NodeType.DOMAIN)
         self.engine.add_node(root_node)
         self.engine.start()

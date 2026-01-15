@@ -17,7 +17,7 @@ class BasicDNSStrategy(Strategy):
 
     def __init__(self):
         self.resolver = dns.resolver.Resolver()
-        self.resolver.lifetime = 3.0
+        self.resolver.lifetime = 1.0
 
     def execute(self, node: Node) -> Generator[Tuple[Node, Edge], None, None]:
         if node.type != NodeType.DOMAIN:
