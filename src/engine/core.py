@@ -42,36 +42,45 @@ class ScannerEngine:
         self.queue.put(task)
 
     def _process_node(self, node: Node, depth: int):
-        # Mark as visited for processing context if needed, but we check existence in add_node
-        # However, we might want to avoid re-scanning the same node if it was added from multiple sources?
-        # A set of 'scanned' nodes might be better than 'nodes' (which are just known).
+        # Mark as visited for processing context if needed
         with self.lock:
             if node in self.visited:
                 return
             self.visited.add(node)
 
-        for strategy in self.strategies:
-            # Strategies verify node type themselves
-            for new_node, edge in strategy.execute(node):
-                self.add_edge(edge, depth)
+        try:
+            for strategy in self.strategies:
+                try:
+                    # Strategies verify node type themselves
+                    for new_node, edge in strategy.execute(node):
+                        self.add_edge(edge, depth)
+                except Exception as e:
+                    print(f"Error in strategy {strategy.__class__.__name__} for {node}: {e}")
+        except Exception as e:
+             print(f"Error processing node {node}: {e}")
 
     def start(self):
         self.running = True
-        worker_thread = threading.Thread(target=self._worker)
-        worker_thread.daemon = True
-        worker_thread.start()
+        # Use a separate thread to consume the queue and submit to the pool
+        # This prevents blocking the start() method or the TUI loop
+        self.dispatcher_thread = threading.Thread(target=self._dispatcher)
+        self.dispatcher_thread.daemon = True
+        self.dispatcher_thread.start()
 
-    def _worker(self):
-        while self.running:
-            try:
-                task = self.queue.get(timeout=1)
-                task()
-                self.queue.task_done()
-            except queue.Empty:
-                continue
-            except Exception as e:
-                # Log error?
-                pass
+    def _dispatcher(self):
+        # We need a pool to execute strategies in parallel
+        # Max workers = 20 to handle multiple DNS queries concurrently
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+            while self.running:
+                try:
+                    task = self.queue.get(timeout=0.5)
+                    executor.submit(task)
+                    self.queue.task_done()
+                except queue.Empty:
+                    continue
+                except Exception as e:
+                    print(f"Dispatcher error: {e}")
 
     def stop(self):
         self.running = False
