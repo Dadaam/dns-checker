@@ -2,18 +2,18 @@ import TermTk as ttk
 from src.scanner.manager import ScannerManager
 import threading
 
-class DNSCheckerApp(ttk.TTk):
+class DNSCheckerApp:
     def __init__(self):
-        super().__init__()
+        self.root = ttk.TTk()
         self.layout = ttk.TTkVBoxLayout()
-        self.root = self.root
         self.root.setLayout(self.layout)
         
-        # Main Window
+        # Main Window configuration
+        # We use a TTkWindow to hold our application content
         self.window = ttk.TTkWindow(parent=self.root, pos=(1,1), size=(100, 30), title="DNS Checker", border=True)
         self.window.setLayout(ttk.TTkVBoxLayout())
         
-        # Input Area
+        # Input Area: Layout for domain input and scan button
         input_container = ttk.TTkContainer(layout=ttk.TTkHBoxLayout(), maxHeight=3)
         self.window.layout().addWidget(input_container)
         
@@ -44,13 +44,17 @@ class DNSCheckerApp(ttk.TTk):
         self.log_text.append(message)
 
     def start_scan(self):
+        """
+        Initiates the scanning process.
+        Validates input and starts a background thread to prevent UI freezing.
+        """
         domain = self.domain_input.text()
         if not domain:
             self.log("Error: Please enter a domain.")
             return
             
         self.log(f"Starting scan for {domain}...")
-        self.scan_btn.setEnabled(False)
+        self.scan_btn.setEnabled(False) # Disable button to prevent double-click
         self.clear_results()
         
         # Run scan in a separate thread to prevent freezing TUI
@@ -93,4 +97,4 @@ class DNSCheckerApp(ttk.TTk):
 
 def run():
     app = DNSCheckerApp()
-    app.mainloop()
+    app.root.mainloop()

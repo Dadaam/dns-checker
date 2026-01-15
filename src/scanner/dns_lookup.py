@@ -18,6 +18,9 @@ class DNSLookup:
         """
         Fetch specific DNS records for the domain.
         
+        This method uses dnspython's resolver to query the nameservers
+        for the specified record type. It handles common DNS errors gracefully.
+        
         Args:
             record_type (str): The DNS record type (e.g., 'A', 'MX').
             
