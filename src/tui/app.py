@@ -1,6 +1,8 @@
 import TermTk as ttk
 from src.scanner.manager import ScannerManager
 import threading
+import datetime
+import pyperclip
 
 class DNSCheckerApp:
     def __init__(self):
@@ -26,6 +28,13 @@ class DNSCheckerApp:
         self.scan_btn = ttk.TTkButton(text="Scan", maxWidth=10, border=True)
         input_container.layout().addWidget(self.scan_btn)
         self.scan_btn.clicked.connect(self.start_scan)
+
+        self.copy_btn = ttk.TTkButton(text="Copy", maxWidth=10, border=True)
+        input_container.layout().addWidget(self.copy_btn)
+        self.copy_btn.clicked.connect(self.copy_to_clipboard)
+        
+        # Connect Enter key to scan
+        self.domain_input.returnPressed.connect(self.start_scan)
         
         # Results Area (Tabs)
         self.tab_widget = ttk.TTkTabWidget()
@@ -37,11 +46,39 @@ class DNSCheckerApp:
         self.whois_text = ttk.TTkTextEdit(readOnly=True)
         self.tab_widget.addTab(self.whois_text, "WHOIS")
         
+        self.robots_text = ttk.TTkTextEdit(readOnly=True)
+        self.tab_widget.addTab(self.robots_text, "Robots.txt")
+
         self.log_text = ttk.TTkTextEdit(readOnly=True)
         self.tab_widget.addTab(self.log_text, "Logs")
 
     def log(self, message):
-        self.log_text.append(message)
+        timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+        self.log_text.append(f"[{timestamp}] {message}")
+
+    def copy_to_clipboard(self):
+        """Copies the content of the currently active tab to clipboard."""
+        try:
+            current_widget = self.tab_widget.currentWidget()
+            if isinstance(current_widget, ttk.TTkTextEdit):
+                # TTkTextEdit.toPlainText() or .toAnsi() might not be directly available or standard 
+                # depending on version, but typically .toPlainText() retrieves content.
+                # Inspecting pyTermTk source shows logic for handling lines. 
+                # For simplicity, we'll iterate lines since document().toPlainText() adds extra newlines in some versions.
+                # Actually, simply joining document()._data lines is safest if public API is missing.
+                # Let's rely on .toPlainText() if it exists, otherwise standard iteration.
+                if hasattr(current_widget, 'toPlainText'):
+                     text = current_widget.toPlainText()
+                else: 
+                     # Fallback access (internal structure dependent, risky but effective)
+                     text = current_widget.text() 
+                
+                pyperclip.copy(str(text))
+                self.log("Copied current tab to clipboard.")
+            else:
+                self.log("Nothing to copy from this tab.")
+        except Exception as e:
+            self.log(f"Copy failed: {str(e)}")
 
     def start_scan(self):
         """
@@ -63,6 +100,7 @@ class DNSCheckerApp:
     def clear_results(self):
         self.dns_text.setText("")
         self.whois_text.setText("")
+        self.robots_text.setText("")
 
     def perform_scan(self, domain):
         try:
@@ -88,6 +126,10 @@ class DNSCheckerApp:
             whois_output = str(results.get("whois", "No WHOIS data"))
             self.whois_text.setText(whois_output)
             
+            # Formatting Robots.txt results
+            robots_output = str(results.get("robots", "No Robots.txt data"))
+            self.robots_text.setText(robots_output)
+
             self.log("Scan completed successfully.")
             
         except Exception as e:
