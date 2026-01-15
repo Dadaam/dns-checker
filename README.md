@@ -1,43 +1,38 @@
-# DNS Checker
+# Pure DNS Scanner
 
-A terminal-based DNS scanner and information retrieval tool built with Python and pyTermTk.
+A recursive, modular DNS scanner that relies **exclusively** on DNS queries (no WHOIS, no HTTP scraping). Visualizes results in a hierarchical TUI.
 
 ## Features
 
-- **DNS Records**: Retrieve A, AAAA, MX, NS, TXT, SOA, CNAME records.
-- **WHOIS Lookup**: Fetch domain registration details.
-- **TUI**: User-friendly Terminal User Interface.
-- **Modular Architecture**: Clean and extensible code structure.
+- **Pure DNS**: Uses only standard DNS queries (A, AAAA, MX, NS, PTR, SRV, TXT).
+- **Recursive Scanning**: Finds a new domain/IP -> Scans it immediately.
+- **Strategies**:
+  - **Basic**: Standard records.
+  - **TXT Parsing**: Extracts IPs/Domains from SPF/DMARC.
+  - **SRV Brute-force**: Finds services like `_xmpp`, `_sip`.
+  - **Reverse DNS**: PTR lookups for IPs.
+  - **Parent Deduction**: Crawls up to the registered domain.
+  - **Neighbors**: Scans adjacent IPs (+1/-1).
+  - **Subdomains**: Brute-forces common prefixes.
+- **TUI**: Real-time terminal dashboard with Tree View and Stats.
+- **Graphviz Export**: Exports the discovery graph to `.dot` format.
 
 ## Installation
 
-1. Clone the repository:
-   ```bash
-   git clone <repository_url>
-   cd dns-checker
-   ```
-
-2. Create a virtual environment (optional but recommended):
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. Install dependencies:
+1. Clone the repository.
+2. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
 
 ## Usage
 
-Run the application:
+Run the scanner:
 ```bash
 python main.py
 ```
 
-## Testing
-
-Run the tests using pytest:
-```bash
-pytest
-```
+- Enter a **Domain**.
+- Set **Depth** (recursion limit).
+- Click **START SCAN**.
+- Use **Export .dot** to save the graph.

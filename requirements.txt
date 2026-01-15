@@ -1,6 +1,4 @@
 pyTermTk
 dnspython
-python-whois
-requests
 pytest
 pyperclip
