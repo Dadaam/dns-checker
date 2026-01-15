@@ -48,7 +48,7 @@ class DNSCheckerApp:
         Initiates the scanning process.
         Validates input and starts a background thread to prevent UI freezing.
         """
-        domain = self.domain_input.text()
+        domain = str(self.domain_input.text()).strip()
         if not domain:
             self.log("Error: Please enter a domain.")
             return
