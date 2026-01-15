@@ -95,20 +95,6 @@ class DNSScannerApp:
         stats = self.engine.get_stats()
         self.stats_label.setText(f"Nodes: {stats['nodes']} | Edges: {stats['edges']} | Queue: {stats['queue']} | Visited: {stats['visited']}")
         
-        # Update Tree (Naive approach: clear and rebuild or just add new? 
-        # Rebuilding 1000 nodes every second is heavy.
-        # Optim: Only add new nodes if possible.
-        # Since tree structure is complex with graph cycles, 
-        # let's just list them by Type for now? Or flatten?
-        # User wants "Arborescence".
-        # Let's try to list nodes under Categories (DOMAIN, IP, etc.)
-        
-        with self.engine.lock:
-            current_nodes = list(self.engine.nodes)
-            
-        # Very naive incremental update
-        # We group by type in the tree
-        
         # Initialize categories if empty
         if not hasattr(self, 'cat_items'):
             self.cat_items = {}
@@ -118,15 +104,33 @@ class DNSScannerApp:
                 item.setExpanded(True)
                 self.cat_items[ntype] = item
 
+        # Optim: Only process a batch of new nodes per frame to maintain 60FPS
+        # If we try to add 1000 items at once, UI freezes.
+        BATCH_SIZE = 50
+        nodes_processed = 0
+        
+        # We need a thread-safe way to get new nodes. 
+        # Accessing engine.nodes directly is safe due to lock, but iterating strict list is better.
+        # We keep track of what we added in self.added_nodes.
+        
+        with self.engine.lock:
+             # Fast path: checks size first
+             if len(self.engine.nodes) == len(self.added_nodes):
+                 return
+             # Snapshot of current nodes
+             current_nodes = list(self.engine.nodes)
+
         for node in current_nodes:
             if node not in self.added_nodes:
                 self.added_nodes.add(node)
                 parent = self.cat_items.get(node.type)
                 if parent:
-                    # Color coding? TTk supports color in text?
-                    # text = f"{node.value}"
                     child = ttk.TTkTreeWidgetItem([node.type.value, node.value])
                     parent.addChild(child)
+                
+                nodes_processed += 1
+                if nodes_processed >= BATCH_SIZE:
+                    break
 
     def export_graphviz(self):
         try:
