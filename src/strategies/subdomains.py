@@ -52,7 +52,7 @@ class SubdomainStrategy(Strategy):
                 # I will create a custom EdgeType.SUBDOMAIN in models/graph.py now for clarity.
                 
                 # Check AAAA too? Usually A is enough to prove existence.
-                yield new_node, Edge(source=node, target=new_node, type=EdgeType.A) # Using A is weird.
+                yield new_node, Edge(source=node, target=new_node, type=EdgeType.SUBDOMAIN)
                 
             except Exception:
                 continue
