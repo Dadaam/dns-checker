@@ -1,11 +1,8 @@
-import asyncio
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Input, Label, Static
-from textual.containers import Container, Vertical
+from textual.widgets import Header, Footer, Input, Label, Button
+from textual.containers import Container
 from textual.binding import Binding
-from textual.worker import Worker, get_current_worker
 from textual import work
-from rich.console import Console
 
 from src.engine.core import ScannerEngine
 from src.models.graph import Node, NodeType
@@ -24,17 +21,23 @@ class DNSTextualApp(App):
     }
     
     #controls {
+        layout: horizontal;
         height: auto;
         dock: top;
         padding: 1;
         background: $boost;
-        border-bottom: solid green;
+        border-bottom: solid $accent;
     }
     
     GraphWidget {
         background: $surface;
         width: 100%;
         height: 1fr;
+    }
+
+    #stats {
+        padding-left: 2;
+        color: $text-muted;
     }
     """
     
@@ -48,6 +51,8 @@ class DNSTextualApp(App):
         self.engine = ScannerEngine(max_depth=3)
         self.register_strategies()
         self.is_scanning = False
+        self.root_node = None
+        self._last_counts = (0, 0)
 
     def register_strategies(self):
         self.engine.register_strategy(BasicDNSStrategy())
@@ -62,6 +67,8 @@ class DNSTextualApp(App):
             yield Input(placeholder="example.com", id="domain_input")
             yield Label("Depth:", classes="pad-left")
             yield Input(placeholder="3", value="3", id="depth_input", type="integer")
+            yield Button("Scan", id="scan_button")
+            yield Label("Idle", id="stats")
         
         yield GraphWidget(id="graph")
         yield Footer()
@@ -74,38 +81,47 @@ class DNSTextualApp(App):
     async def on_input_submitted(self, event: Input.Submitted):
         if event.input.id == "domain_input":
             domain = event.value
-            depth = int(self.query_one("#depth_input").value)
+            depth = self._parse_depth()
             
             if domain:
-                self.start_scan(domain, depth)
+                self.begin_scan(domain, depth)
         
         elif event.input.id == "depth_input":
              # Move back to domain input or start if possible
              self.query_one("#domain_input").focus()
 
+    def on_button_pressed(self, event: Button.Pressed):
+        if event.button.id == "scan_button":
+            domain = self.query_one("#domain_input").value
+            depth = self._parse_depth()
+            if domain:
+                self.begin_scan(domain, depth)
+
+    def begin_scan(self, domain: str, depth: int):
+        if self.is_scanning:
+            return
+        self.is_scanning = True
+        self._last_counts = (0, 0)
+        self.root_node = Node(value=domain, type=NodeType.DOMAIN)
+        self.query_one("#scan_button").disabled = True
+        self.query_one("#stats", Label).update("Scanning...")
+        self.query_one(GraphWidget).set_root(self.root_node)
+        self.start_scan(domain, depth)
+
+    def _parse_depth(self) -> int:
+        try:
+            return int(self.query_one("#depth_input").value)
+        except (TypeError, ValueError):
+            return 3
+
     @work(exclusive=True, thread=True)
     def start_scan(self, domain: str, depth: int):
-        self.is_scanning = True
         self.engine.max_depth = depth
         
         # Reset engine state manually before scan if needed, or rely on scan() clearing it.
         # core.py scan() clears nodes/edges.
         
         root = Node(value=domain, type=NodeType.DOMAIN)
-        
-        # We need to bridge the sync engine with UI updates.
-        # Ideally, we'd watch the engine.nodes count, but the engine blocks.
-        # We can run the engine in this worker thread.
-        
-        # BUT: The engine.scan is a single blocking call. 
-        # We won't see partial results unless the engine has hooks or we change the engine to be iterative/async.
-        # The current iterative implementation is a while loop. 
-        # For this version, we will only see results AFTER the scan finishes if we just call scan().
-        # To make it "live", we would need to modify the engine to be generator-based or callback-based.
-        
-        # HOWEVER, let's try just running it. 
-        # If the user wants to see progress, we really should refactor the engine to yield or run in steps.
-        # For now, let's just run it and see the final result, or see if we can hack read-access from another thread (unsafe but might work for viz).
         
         self.notify(f"Starting scan for {domain}...")
         try:
@@ -115,6 +131,12 @@ class DNSTextualApp(App):
             self.notify(f"Error: {e}", severity="error")
         finally:
             self.is_scanning = False
+            self.call_from_thread(self._scan_finished)
+
+    def _scan_finished(self):
+        self.query_one("#scan_button").disabled = False
+        stats = self.engine.get_stats()
+        self.query_one("#stats", Label).update(f"Done: {stats['nodes']} nodes / {stats['edges']} edges")
 
     def update_graph_view(self):
         # This is called on the main thread
@@ -125,23 +147,30 @@ class DNSTextualApp(App):
         # We create a shallow copy networkx graph
         # Creating a full NX graph every 500ms might be heavy if N is large.
         
-        if not self.engine.nodes:
+        import networkx as nx
+        G = nx.DiGraph()
+        nodes = list(self.engine.nodes)
+        edges = list(self.engine.edges)
+
+        if not nodes and not edges:
             return
 
-        import networkx as nx
-        G = nx.Graph()
-        
         # Add nodes
-        for node in list(self.engine.nodes): # simple list copy to avoid iteration error size changed
-            G.add_node(node) # Use the node object itself
-            
+        for node in nodes:
+            G.add_node(node)
+
         # Add edges
-        for edge in list(self.engine.edges):
-            G.add_edge(edge.source, edge.target)
-            
-        # Update widget
-        graph_widget = self.query_one(GraphWidget)
-        graph_widget.set_graph(G)
+        for edge in edges:
+            G.add_edge(edge.source, edge.target, edge_type=edge.type)
+
+        counts = (len(nodes), len(edges))
+        if counts != self._last_counts:
+            self._last_counts = counts
+            graph_widget = self.query_one(GraphWidget)
+            graph_widget.set_graph(G, root=self.root_node)
+
+        if self.is_scanning:
+            self.query_one("#stats", Label).update(f"Scanning... {counts[0]} nodes / {counts[1]} edges")
 
     def action_refresh_layout(self):
         self.query_one(GraphWidget).recompute_layout()
