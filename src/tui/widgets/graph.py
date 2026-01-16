@@ -50,7 +50,7 @@ class GraphWidget(Widget):
         self._strips: List[Strip] = []
         self._layout_dirty = True
         self._render_dirty = True
-        self._layer_gap = 5
+        self._layer_gap = 3
         self._max_label_width = 64
         self._pan_x = 0
         self._pan_y = 0
@@ -188,7 +188,7 @@ class GraphWidget(Widget):
         layers = self._assign_layers(nodes)
         max_layer = max(layers.values(), default=0)
 
-        layer_gap = max(2, min(self._layer_gap, max(2, (height - 1) // (max_layer + 1))))
+        layer_gap = max(1, min(self._layer_gap, max(1, (height - 1) // (max_layer + 1))))
         used_height = max_layer * layer_gap + 1
         top_margin = (height - used_height) // 2
 
@@ -210,7 +210,9 @@ class GraphWidget(Widget):
             count = len(layer_nodes)
             layer_labels = {node: self._node_label(node, 0) for node in layer_nodes}
             max_label_len = max((len(label) for label in layer_labels.values()), default=4)
-            cell_width = max(12, max_label_len + 6)
+            available_cell = max(4, width // max(1, count))
+            cell_width = min(max_label_len + 4, available_cell)
+            cell_width = max(4, cell_width)
             total_width = cell_width * count
             start_x = (width - total_width) // 2
             y = top_margin + layer * layer_gap
@@ -293,26 +295,30 @@ class GraphWidget(Widget):
         if sx == tx and sy == ty:
             return
 
-        if sy == ty:
-            if sx < tx:
-                self._draw_horizontal(grid, sy, sx + 1, tx - 1, style)
-                self._set_cell(grid, tx - 1, sy, ">", arrow_style, force=True)
-            else:
-                self._draw_horizontal(grid, sy, tx + 1, sx - 1, style)
-                self._set_cell(grid, tx + 1, sy, "<", arrow_style, force=True)
+        dx = tx - sx
+        dy = ty - sy
+
+        if abs(dx) >= abs(dy):
+            if sy != ty:
+                step_y = 1 if ty > sy else -1
+                self._draw_vertical(grid, sx, sy + step_y, ty, style)
+            self._draw_horizontal(grid, ty, sx, tx, style)
+            if dx != 0:
+                arrow_x = tx - (1 if dx > 0 else -1)
+                arrow_y = ty
+                char = ">" if dx > 0 else "<"
+                self._set_cell(grid, arrow_x, arrow_y, char, arrow_style, force=True)
             return
 
-        if sy < ty:
-            bend_y = ty - 1
-            self._draw_vertical(grid, sx, sy + 1, bend_y, style)
-            self._draw_horizontal(grid, bend_y, sx, tx, style)
-            self._set_cell(grid, tx, bend_y, "v", arrow_style, force=True)
-            return
-
-        bend_y = ty + 1
-        self._draw_vertical(grid, sx, sy - 1, bend_y, style)
-        self._draw_horizontal(grid, bend_y, sx, tx, style)
-        self._set_cell(grid, tx, bend_y, "^", arrow_style, force=True)
+        if sx != tx:
+            step_x = 1 if tx > sx else -1
+            self._draw_horizontal(grid, sy, sx + step_x, tx, style)
+        self._draw_vertical(grid, tx, sy, ty, style)
+        if dy != 0:
+            arrow_x = tx
+            arrow_y = ty - (1 if dy > 0 else -1)
+            char = "v" if dy > 0 else "^"
+            self._set_cell(grid, arrow_x, arrow_y, char, arrow_style, force=True)
 
     def _draw_horizontal(self, grid, y: int, x1: int, x2: int, style: Style):
         if y < 0 or y >= len(grid):
