@@ -50,7 +50,7 @@ class GraphWidget(Widget):
         self._strips: List[Strip] = []
         self._layout_dirty = True
         self._render_dirty = True
-        self._layer_gap = 3
+        self._layer_gap = 4
         self._max_label_width = 64
         self._pan_x = 0
         self._pan_y = 0
@@ -95,22 +95,22 @@ class GraphWidget(Widget):
         self.recompute_layout()
 
     def action_pan_left(self):
-        self._pan_x -= 2
-        self._render_dirty = True
-        self.refresh()
-
-    def action_pan_right(self):
         self._pan_x += 2
         self._render_dirty = True
         self.refresh()
 
+    def action_pan_right(self):
+        self._pan_x -= 2
+        self._render_dirty = True
+        self.refresh()
+
     def action_pan_up(self):
-        self._pan_y -= 1
+        self._pan_y += 1
         self._render_dirty = True
         self.refresh()
 
     def action_pan_down(self):
-        self._pan_y += 1
+        self._pan_y -= 1
         self._render_dirty = True
         self.refresh()
 
@@ -131,8 +131,8 @@ class GraphWidget(Widget):
             return
         dx = event.screen_offset.x - self._last_mouse.x
         dy = event.screen_offset.y - self._last_mouse.y
-        self._pan_x += dx
-        self._pan_y += dy
+        self._pan_x -= dx
+        self._pan_y -= dy
         self._last_mouse = event.screen_offset
         self._render_dirty = True
         self.refresh()
@@ -171,7 +171,7 @@ class GraphWidget(Widget):
         for node, (x, y) in self._layout.items():
             x, y = self._apply_pan(x, y)
             style = self._node_style(node)
-            marker = "@" if node == self.root else "o"
+            marker = "@" if node == self.root else "*"
             self._set_cell(grid, x, y, marker, style, force=True)
             label = self._labels.get(node, "")
             if label:
@@ -208,7 +208,7 @@ class GraphWidget(Widget):
                 continue
 
             count = len(layer_nodes)
-            cell_width = max(6, min(self._max_label_width + 2, max(6, width // max(1, count))))
+            cell_width = max(8, min(self._max_label_width + 4, max(8, width // max(1, count))))
             label_width = max(4, cell_width - 2)
 
             total_width = cell_width * count
