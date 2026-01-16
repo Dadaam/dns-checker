@@ -1,6 +1,7 @@
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, Input, Label, Button, Static
 from textual.containers import Container
+from textual import events
 from textual.binding import Binding
 from textual import work
 
@@ -22,9 +23,10 @@ class DNSTextualApp(App):
     
     #controls {
         layout: horizontal;
-        height: auto;
+        height: 3;
         dock: top;
-        padding: 1;
+        padding: 0 1;
+        gap: 1;
         background: $boost;
         border-bottom: solid $accent;
     }
@@ -58,7 +60,10 @@ class DNSTextualApp(App):
     }
 
     #close_button {
-        min-width: 3;
+        width: 3;
+        height: 3;
+        padding: 0;
+        content-align: center middle;
     }
     """
     
@@ -87,7 +92,7 @@ class DNSTextualApp(App):
             yield Label("Domaine:")
             yield Input(placeholder="exemple.com", id="domain_input")
             yield Label("Profondeur:", classes="pad-left")
-            yield Input(placeholder="3", value="3", id="depth_input", type="integer")
+            yield Input(placeholder="3", value="", id="depth_input", type="integer")
             yield Button("-", id="depth_down")
             yield Button("+", id="depth_up")
             yield Button("Scan", id="scan_button")
@@ -102,6 +107,17 @@ class DNSTextualApp(App):
         self.query_one("#domain_input").focus()
         # Set up a timer to refresh the graph view periodically if scanning
         self.set_interval(0.5, self.update_graph_view)
+
+    def on_key(self, event: events.Key) -> None:
+        if not event.character or not event.character.isdigit():
+            return
+        focused = self.focused
+        if focused is None or focused.id not in ("domain_input", "depth_input"):
+            depth_input = self.query_one("#depth_input", Input)
+            depth_input.focus()
+            current = depth_input.value or ""
+            depth_input.value = f"{current}{event.character}" if current else event.character
+            event.stop()
 
     async def on_input_submitted(self, event: Input.Submitted):
         if event.input.id == "domain_input":
@@ -144,7 +160,10 @@ class DNSTextualApp(App):
 
     def _parse_depth(self) -> int:
         try:
-            return max(1, int(self.query_one("#depth_input").value))
+            value = self.query_one("#depth_input").value.strip()
+            if not value:
+                return 3
+            return max(1, int(value))
         except (TypeError, ValueError):
             return 3
 
