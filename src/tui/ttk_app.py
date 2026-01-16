@@ -39,7 +39,7 @@ class DNSScannerApp(TTkContainer):
         self.top_layout.addWidget(self.input_domain)
         
         self.top_layout.addWidget(TTkLabel(text="Depth:", maxWidth=7))
-        self.input_depth = TTkLineEdit(text="3", maxWidth=5, inputType=TTkLineEdit.Input_Number)
+        self.input_depth = TTkLineEdit(text="3", maxWidth=5)
         self.top_layout.addWidget(self.input_depth)
         
         self.btn_scan = TTkButton(text="Scan", border=True, maxWidth=10)
