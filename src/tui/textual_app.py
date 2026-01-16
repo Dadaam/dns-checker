@@ -26,7 +26,6 @@ class DNSTextualApp(App):
         height: 3;
         dock: top;
         padding: 0 1;
-        gap: 1;
         background: $boost;
         border-bottom: solid $accent;
     }
