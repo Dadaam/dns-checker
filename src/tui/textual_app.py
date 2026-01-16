@@ -39,9 +39,6 @@ class DNSTextualApp(App):
         width: 6;
     }
 
-    #depth_down, #depth_up {
-        min-width: 3;
-    }
     
     GraphWidget {
         background: $surface;
@@ -92,8 +89,6 @@ class DNSTextualApp(App):
             yield Input(placeholder="exemple.com", id="domain_input")
             yield Label("Profondeur:", classes="pad-left")
             yield Input(placeholder="3", value="", id="depth_input", type="integer")
-            yield Button("-", id="depth_down")
-            yield Button("+", id="depth_up")
             yield Button("Scan", id="scan_button")
             yield Label("Idle", id="stats")
             yield Static("", id="spacer")
@@ -139,10 +134,6 @@ class DNSTextualApp(App):
             depth = self._parse_depth()
             if domain:
                 self.begin_scan(domain, depth)
-        elif event.button.id == "depth_down":
-            self._adjust_depth(-1)
-        elif event.button.id == "depth_up":
-            self._adjust_depth(1)
         elif event.button.id == "close_button":
             self.exit()
 
@@ -165,12 +156,6 @@ class DNSTextualApp(App):
             return max(1, int(value))
         except (TypeError, ValueError):
             return 3
-
-    def _adjust_depth(self, delta: int):
-        depth = self._parse_depth() + delta
-        if depth < 1:
-            depth = 1
-        self.query_one("#depth_input", Input).value = str(depth)
 
     @work(exclusive=True, thread=True)
     def start_scan(self, domain: str, depth: int):
