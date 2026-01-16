@@ -30,6 +30,10 @@ class DNSTextualApp(App):
         border-bottom: solid $accent;
     }
 
+    .pad-left {
+        padding-left: 1;
+    }
+
     #domain_input {
         width: 1fr;
         min-width: 24;
@@ -44,6 +48,7 @@ class DNSTextualApp(App):
         background: $surface;
         width: 100%;
         height: 1fr;
+        border: round $accent;
     }
 
     #stats {

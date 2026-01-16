@@ -41,12 +41,19 @@ class GraphWidget(Widget):
         Binding("j", "pan_down", "Pan Down"),
     ]
 
-    def __init__(self, graph: Optional[nx.DiGraph] = None, root=None, name: str = None, id: str = None, classes: str = None):
+    def __init__(
+        self,
+        graph: Optional[nx.DiGraph] = None,
+        root=None,
+        name: str = None,
+        id: str = None,
+        classes: str = None,
+    ):
         super().__init__(name=name, id=id, classes=classes)
         self.graph = graph if graph is not None else nx.DiGraph()
         self.root = root
         self._layout: Dict[object, Tuple[int, int]] = {}
-        self._labels: Dict[object, str] = {}
+        self._labels: Dict[object, List[str]] = {}
         self._strips: List[Strip] = []
         self._layout_dirty = True
         self._render_dirty = True
@@ -173,24 +180,22 @@ class GraphWidget(Widget):
             style = self._node_style(node)
             marker = "@" if node == self.root else "*"
             self._set_cell(grid, x, y, marker, style, force=True)
-            label = self._labels.get(node, "")
-            if label:
-                self._draw_label(grid, x + 2, y, label, style)
+            label_lines = self._labels.get(node, [])
+            if label_lines:
+                self._draw_label_lines(grid, x + 2, y, label_lines, style)
 
         self._strips = [self._row_to_strip(row) for row in grid]
         self._render_dirty = False
 
-    def _compute_layout(self, width: int, height: int) -> Tuple[Dict[object, Tuple[int, int]], Dict[object, str]]:
+    def _compute_layout(
+        self, width: int, height: int
+    ) -> Tuple[Dict[object, Tuple[int, int]], Dict[object, List[str]]]:
         nodes = list(self.graph.nodes)
         if not nodes:
             return {}, {}
 
         layers = self._assign_layers(nodes)
         max_layer = max(layers.values(), default=0)
-
-        layer_gap = max(1, min(self._layer_gap, max(1, (height - 1) // (max_layer + 1))))
-        used_height = max_layer * layer_gap + 1
-        top_margin = (height - used_height) // 2
 
         by_layer: Dict[int, List[object]] = defaultdict(list)
         for node, layer in layers.items():
@@ -200,27 +205,58 @@ class GraphWidget(Widget):
             layer_nodes.sort(key=self._node_sort_key)
 
         layout: Dict[object, Tuple[int, int]] = {}
-        labels: Dict[object, str] = {}
+        labels: Dict[object, List[str]] = {}
 
-        for layer in range(max_layer + 1):
+        layer_defs: List[Tuple[List[object], Dict[object, List[str]], int, int]] = []
+        total_label_height = 0
+        layer_count = max_layer + 1
+
+        for layer in range(layer_count):
             layer_nodes = by_layer.get(layer, [])
             if not layer_nodes:
                 continue
 
             count = len(layer_nodes)
-            layer_labels = {node: self._node_label(node, 0) for node in layer_nodes}
-            max_label_len = max((len(label) for label in layer_labels.values()), default=4)
             available_cell = max(4, width // max(1, count))
-            cell_width = min(max_label_len + 4, available_cell)
-            cell_width = max(4, cell_width)
+
+            raw_labels = {node: self._node_label(node) for node in layer_nodes}
+            max_label_len = max((len(label) for label in raw_labels.values()), default=4)
+            desired_cell = min(self._max_label_width + 2, max_label_len + 2)
+            cell_width = max(4, min(desired_cell, available_cell))
+            label_width = max(1, cell_width - 2)
+
+            wrapped_labels = {
+                node: self._wrap_label(label, label_width) for node, label in raw_labels.items()
+            }
+            layer_height = max((len(lines) for lines in wrapped_labels.values()), default=1)
+
+            layer_defs.append((layer_nodes, wrapped_labels, cell_width, layer_height))
+            total_label_height += layer_height
+
+        if not layer_defs:
+            return {}, {}
+
+        gap = 0
+        if len(layer_defs) > 1:
+            extra_space = height - total_label_height
+            if extra_space > 0:
+                gap = min(self._layer_gap, max(1, extra_space // (len(layer_defs) - 1)))
+
+        total_height = total_label_height + gap * (len(layer_defs) - 1)
+        top_margin = max(0, (height - total_height) // 2)
+
+        y = top_margin
+        for layer_nodes, wrapped_labels, cell_width, layer_height in layer_defs:
+            count = len(layer_nodes)
             total_width = cell_width * count
             start_x = (width - total_width) // 2
-            y = top_margin + layer * layer_gap
 
             for index, node in enumerate(layer_nodes):
                 x = start_x + index * cell_width
                 layout[node] = (x, y)
-                labels[node] = layer_labels[node]
+                labels[node] = wrapped_labels[node]
+
+            y += layer_height + gap
 
         return layout, labels
 
@@ -274,8 +310,15 @@ class GraphWidget(Widget):
         value = getattr(node, "value", str(node))
         return rank, value
 
-    def _node_label(self, node, max_width: int) -> str:
+    def _node_label(self, node) -> str:
         return getattr(node, "value", str(node))
+
+    def _wrap_label(self, label: str, width: int) -> List[str]:
+        if width <= 0:
+            return [label]
+        if len(label) <= width:
+            return [label]
+        return [label[i : i + width] for i in range(0, len(label), width)]
 
     def _node_style(self, node) -> Style:
         ntype = getattr(node, "type", None)
@@ -336,14 +379,16 @@ class GraphWidget(Widget):
         for y in range(start, end + 1):
             self._merge_line(grid, x, y, "|", style)
 
-    def _draw_label(self, grid, x: int, y: int, label: str, style: Style):
-        if y < 0 or y >= len(grid):
-            return
+    def _draw_label_lines(self, grid, x: int, y: int, lines: List[str], style: Style):
         width = len(grid[0])
-        for i, ch in enumerate(label):
-            px = x + i
-            if 0 <= px < width:
-                self._set_cell(grid, px, y, ch, style, force=True)
+        for line_index, line in enumerate(lines):
+            py = y + line_index
+            if py < 0 or py >= len(grid):
+                continue
+            for i, ch in enumerate(line):
+                px = x + i
+                if 0 <= px < width:
+                    self._set_cell(grid, px, py, ch, style, force=True)
 
     def _merge_line(self, grid, x: int, y: int, char: str, style: Style):
         if y < 0 or y >= len(grid):
