@@ -28,6 +28,19 @@ class DNSTextualApp(App):
         background: $boost;
         border-bottom: solid $accent;
     }
+
+    #domain_input {
+        width: 1fr;
+        min-width: 24;
+    }
+
+    #depth_input {
+        width: 6;
+    }
+
+    #depth_down, #depth_up {
+        min-width: 3;
+    }
     
     GraphWidget {
         background: $surface;
@@ -99,8 +112,11 @@ class DNSTextualApp(App):
                 self.begin_scan(domain, depth)
         
         elif event.input.id == "depth_input":
-             # Move back to domain input or start if possible
-             self.query_one("#domain_input").focus()
+             domain = self.query_one("#domain_input").value
+             if domain:
+                 self.begin_scan(domain, self._parse_depth())
+             else:
+                 self.query_one("#domain_input").focus()
 
     def on_button_pressed(self, event: Button.Pressed):
         if event.button.id == "scan_button":
