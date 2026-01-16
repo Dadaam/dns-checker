@@ -83,9 +83,9 @@ class DNSScannerApp(TTkContainer):
     def start_scan(self):
         if self.is_scanning: return
         
-        domain = self.input_domain.text()
+        domain = str(self.input_domain.text())
         try:
-            depth = int(self.input_depth.text())
+            depth = int(str(self.input_depth.text()))
         except:
             depth = 3
             

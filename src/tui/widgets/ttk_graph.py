@@ -25,14 +25,46 @@ class TTkGraphWidget(TTkWidget):
     def setGraph(self, graph: nx.Graph):
         self._graph = graph
         self.recomputeLayout()
+        self.fitToScreen()
         self.update()
 
     def recomputeLayout(self):
         if not self._graph.nodes:
             self._pos = {}
             return
-        # Force directed layout
-        self._pos = nx.spring_layout(self._graph, center=(0,0), scale=1, seed=42)
+        # Use a normalized scale since we handle zoom in rendering
+        # spring_layout returns positions roughly in [-1, 1] if scale=1
+        try:
+            self._pos = nx.spring_layout(self._graph, center=(0,0), scale=1, k=0.5, seed=42)
+        except Exception:
+             self._pos = nx.spring_layout(self._graph, center=(0,0), scale=1, seed=42)
+
+    def fitToScreen(self):
+        # Auto-zoom to fit nodes
+        if not self._pos: return
+        w, h = self.size()
+        
+        # Find min/max
+        xs = [x for x,y in self._pos.values()]
+        ys = [y for x,y in self._pos.values()]
+        
+        if not xs: return
+        
+        min_x, max_x = min(xs), max(xs)
+        min_y, max_y = min(ys), max(ys)
+        
+        span_x = (max_x - min_x) if max_x != min_x else 1
+        span_y = (max_y - min_y) if max_y != min_y else 1
+        
+        # We want span * zoom * 2 < w  (extra factor for text)
+        # We want span * zoom < h
+        
+        zoom_x = (w / 2.5) / span_x
+        zoom_y = (h / 1.5) / span_y
+        
+        self._zoom = min(zoom_x, zoom_y)
+        self._offset_x = 0
+        self._offset_y = 0
 
     def _get_node_color(self, node):
         ntype = getattr(node, 'type', None)
@@ -48,7 +80,8 @@ class TTkGraphWidget(TTkWidget):
         center_x = w // 2 + self._offset_x
         center_y = h // 2 + self._offset_y
         
-        scale_x = self._zoom * 2.0
+        # Aspect ratio correction: terminal chars are ~2x taller than wide
+        scale_x = self._zoom * 2.0 
         scale_y = self._zoom
         
         if not self._pos:
@@ -63,42 +96,35 @@ class TTkGraphWidget(TTkWidget):
                 int(nx_y * scale_y + center_y)
             )
 
-        # Draw Edges
-        # Canvas.drawLine is likely not available or robust in all versions, 
-        # but let's check basic chars.
-        # We'll use a simple Bresenham char drawer or just draw grid points if we want to be safe,
-        # but the user wants links. simple bresenham is best.
+        # Draw Directed Edges
+        edge_color = TTkColor.fg("#444444")
+        arrow_color = TTkColor.fg("#AAAAAA")
         
-        edge_color = TTkColor.fg("#666666")
-        
-        # Sort edges by depth? Nah.
         for u, v in self._graph.edges:
             if u not in screen_coords or v not in screen_coords: continue
             
             x0, y0 = screen_coords[u]
             x1, y1 = screen_coords[v]
             
-            # Simple line drawing logic (Bresenham)
-            dx = abs(x1 - x0)
-            dy = abs(y1 - y0)
-            sx = 1 if x0 < x1 else -1
-            sy = 1 if y0 < y1 else -1
-            err = dx - dy
+            # Draw line
+            self._draw_line(canvas, x0, y0, x1, y1, w, h, edge_color)
             
-            while True:
-                if 0 <= x0 < w and 0 <= y0 < h:
-                     # Don't overwrite nodes ideally, but we draw nodes later so it's fine
-                     canvas.drawChar(pos=(x0, y0), char='·', color=edge_color)
-                
-                if x0 == x1 and y0 == y1: break
-                
-                e2 = 2 * err
-                if e2 > -dy:
-                    err -= dy
-                    x0 += sx
-                if e2 < dx:
-                    err += dx
-                    y0 += sy
+            # Draw Arrow at MIDPOINT to avoid clutter
+            mx = (x0 + x1) // 2
+            my = (y0 + y1) // 2
+            
+            # Add a small offset towards target to indicate direction?
+            # Or just use the arrow char.
+            
+            dx = x1 - x0
+            dy = y1 - y0
+            
+            char = '>' if dx > 0 else '<'
+            if abs(dy) > abs(dx): # Vertical-ish
+                char = 'v' if dy > 0 else '^'
+            
+            if 0 <= mx < w and 0 <= my < h:
+                 canvas.drawChar(pos=(mx, my), char=char, color=arrow_color)
 
         # Draw Nodes
         for node, (sx, sy) in screen_coords.items():
@@ -110,9 +136,40 @@ class TTkGraphWidget(TTkWidget):
                 canvas.drawChar(pos=(sx, sy), char='●', color=color)
                 
                 # Draw label
-                # Avoid drawing off-screen
                 if sx + 2 < w:
                     canvas.drawText(pos=(sx + 2, sy), text=label, color=color)
+        
+        # Debug Info
+        # canvas.drawText(pos=(0,0), text=f"Zoom: {self._zoom:.2f} Offset: {self._offset_x},{self._offset_y}", color=TTkColor.fg("#FFFFFF"))
+
+    def _draw_line(self, canvas, x0, y0, x1, y1, w, h, color):
+        dx = abs(x1 - x0)
+        dy = abs(y1 - y0)
+        sx = 1 if x0 < x1 else -1
+        sy = 1 if y0 < y1 else -1
+        err = dx - dy
+        steps = 0
+        limit = max(w, h) * 2 # Safety break
+        
+        curr_x, curr_y = x0, y0
+        
+        while steps < limit:
+            if 0 <= curr_x < w and 0 <= curr_y < h:
+                 # Don't overwrite nodes ideally. simple check?
+                 # Canvas usually handles Z-order by draw order.
+                 # Draw dim line
+                 canvas.drawChar(pos=(curr_x, curr_y), char='·', color=color)
+            
+            if curr_x == x1 and curr_y == y1: break
+            
+            e2 = 2 * err
+            if e2 > -dy:
+                err -= dy
+                curr_x += sx
+            if e2 < dx:
+                err += dx
+                curr_y += sy
+            steps += 1
 
     # Mouse Interaction
     def mousePressEvent(self, evt: TTkMouseEvent) -> bool:
@@ -131,19 +188,20 @@ class TTkGraphWidget(TTkWidget):
             self._drag_start = (evt.x, evt.y)
             self.update()
             return True
-        return False
+        return True # Swallow event
 
     def mouseReleaseEvent(self, evt: TTkMouseEvent) -> bool:
         self._is_dragging = False
         return True
 
     def wheelEvent(self, evt: TTkMouseEvent) -> bool:
+        # Check event type properly for TermTk 
         if evt.evt == TTkMouseEvent.Wheel:
-            # Check delta (how TTk handles this varies, mostly evt.key is UP/DOWN)
             if evt.key == TTkMouseEvent.WheelUp:
-                 self._zoom *= 1.1
+                 self._zoom *= 1.2
             elif evt.key == TTkMouseEvent.WheelDown:
-                 self._zoom *= 0.9
+                 self._zoom *= 0.8
             self.update()
             return True
         return False
+
