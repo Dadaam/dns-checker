@@ -71,9 +71,9 @@ class DNSTextualApp(App):
     def compose(self) -> ComposeResult:
         yield Header()
         with Container(id="controls"):
-            yield Label("Domain:")
-            yield Input(placeholder="example.com", id="domain_input")
-            yield Label("Depth:", classes="pad-left")
+            yield Label("Domaine:")
+            yield Input(placeholder="exemple.com", id="domain_input")
+            yield Label("Profondeur:", classes="pad-left")
             yield Input(placeholder="3", value="3", id="depth_input", type="integer")
             yield Button("-", id="depth_down")
             yield Button("+", id="depth_up")
