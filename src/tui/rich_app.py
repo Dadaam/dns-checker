@@ -1,11 +1,12 @@
 import time
-from typing import Dict, List, Set, Optional
+from typing import Dict, List, Set, Tuple
 
 from rich.console import Console
-from rich.tree import Tree
-from rich.prompt import Prompt, IntPrompt
 from rich.panel import Panel
-from rich import print as rprint
+from rich.prompt import IntPrompt, Prompt
+from rich.style import Style
+from rich.text import Text
+from rich.tree import Tree
 
 from src.engine.core import ScannerEngine
 from src.models.graph import Node, NodeType
@@ -59,68 +60,98 @@ class RichDNSApp:
             return False
 
     def build_rich_tree(self, root_node: Node) -> Tree:
-        """
-        Builds a connected Rich Tree from the graph edges.
-        """
-        # Style for root
-        root_txt = f"[bold blue]{root_node.value}[/bold blue]"
-        tree = Tree(root_txt)
-        
-        # We need an adjacency list for easier traversal
-        adj: Dict[Node, List] = {}
-        for edge in self.engine.edges:
-            if edge.source not in adj:
-                adj[edge.source] = []
-            adj[edge.source].append(edge)
+        root_label = self._node_label(root_node, is_root=True)
+        tree = Tree(root_label, guide_style="grey50")
 
-        # Global visited set for Spanning Tree visualization
-        visited_global = set()
-        visited_global.add(root_node)
-        
-        self._add_children(root_node, tree, adj, visited_global)
+        adj = self._build_adjacency()
+        visited = set([root_node])
+        self._add_children(root_node, tree, adj, visited)
         return tree
 
-    def _add_children(self, node: Node, tree_node: Tree, adj: Dict, visited_global: Set[Node]):
-        edges = adj.get(node, [])
-        for edge in edges:
+    def _build_adjacency(self) -> Dict[Node, List]:
+        adj: Dict[Node, List] = {}
+        for edge in self.engine.edges:
+            adj.setdefault(edge.source, []).append(edge)
+        for edges in adj.values():
+            edges.sort(key=lambda edge: (self._node_sort_key(edge.target), edge.type.value))
+        return adj
+
+    def _node_sort_key(self, node: Node) -> Tuple[int, str]:
+        type_rank = {
+            NodeType.DOMAIN: 0,
+            NodeType.TLD: 1,
+            NodeType.SERVICE: 2,
+            NodeType.IP_V4: 3,
+            NodeType.IP_V6: 4,
+        }
+        return type_rank.get(node.type, 99), node.value
+
+    def _add_children(self, node: Node, tree_node: Tree, adj: Dict, visited: Set[Node]):
+        for edge in adj.get(node, []):
             target = edge.target
-            
-            # Determine color/style
-            style = "white"
-            if target.type == NodeType.IP_V4: style = "bold yellow"
-            elif target.type == NodeType.IP_V6: style = "bold red"
-            elif target.type == NodeType.DOMAIN: style = "bold blue"
-            elif target.type == NodeType.TLD: style = "bold magenta"
-            elif target.type == NodeType.SERVICE: style = "bold cyan"
-            
-            # Edge style
-            edge_style = "dim"
-            
-            label = f"[{edge_style}]-- {edge.type.value} -->[/{edge_style}] [{style}]{target.value} ({target.type.value})[/{style}]"
-            
-            if target in visited_global:
-                # Duplicate/Reference: Show with dim style, no recursion
-                tree_node.add(f"[dim]{label}[/dim]")
-            else:
-                visited_global.add(target)
-                child_tree = tree_node.add(label)
-                # Recurse
-                self._add_children(target, child_tree, adj, visited_global)
+            label = self._edge_label(edge, target)
+            if target in visited:
+                label.stylize("dim")
+                tree_node.add(label)
+                continue
+            visited.add(target)
+            child = tree_node.add(label)
+            self._add_children(target, child, adj, visited)
+
+    def _node_label(self, node: Node, is_root: bool = False) -> Text:
+        label = Text()
+        node_style = self._node_style(node)
+        label.append(node.value, style=node_style)
+        label.append(f" [{node.type.value}]", style="grey50")
+        if is_root:
+            label.append("  ROOT", style="bold")
+        return label
+
+    def _edge_label(self, edge, target: Node) -> Text:
+        label = Text()
+        label.append(edge.type.value, style=self._edge_style(edge.type.value))
+        label.append("  ")
+        label.append(target.value, style=self._node_style(target))
+        label.append(f" [{target.type.value}]", style="grey50")
+        return label
+
+    def _node_style(self, node: Node) -> Style:
+        if node.type == NodeType.DOMAIN:
+            return Style(color="bright_blue", bold=True)
+        if node.type == NodeType.IP_V4:
+            return Style(color="yellow", bold=True)
+        if node.type == NodeType.IP_V6:
+            return Style(color="red", bold=True)
+        if node.type == NodeType.TLD:
+            return Style(color="magenta")
+        if node.type == NodeType.SERVICE:
+            return Style(color="green")
+        return Style(color="white")
+
+    def _edge_style(self, edge_type: str) -> Style:
+        palette = {
+            "A": Style(color="cyan"),
+            "AAAA": Style(color="cyan"),
+            "CNAME": Style(color="bright_blue"),
+            "NS": Style(color="blue"),
+            "MX": Style(color="bright_magenta"),
+            "PTR": Style(color="bright_green"),
+            "TXT": Style(color="bright_yellow"),
+            "SRV": Style(color="green"),
+            "PARENT": Style(color="magenta"),
+            "NEIGHBOR": Style(color="grey70"),
+            "SUBDOMAIN": Style(color="grey70"),
+        }
+        return palette.get(edge_type, Style(color="white"))
 
     def run(self):
         self.console.clear()
-        self.console.rule("[bold blue]DNS Scanner (Synchronous)[/bold blue]")
-        
-        domain = Prompt.ask("Enter Domain")
-        
-        # Depth default infinite (represented as 100 here for practicality, or we can use a very large number)
-        depth_str = Prompt.ask("Enter Depth (Leave empty for Infinite)", default="999")
-        try:
-            depth = int(depth_str)
-        except ValueError:
-            depth = 999
+        self.console.print(Panel.fit("DNS Scanner", style="bold blue"))
 
-        self.console.print(f"\n[green]Scanning {domain} (Depth: {depth})...[/green]")
+        domain = Prompt.ask("Domaine")
+        depth = IntPrompt.ask("Profondeur", default=3)
+
+        self.console.print(f"\n[green]Scan: {domain} (profondeur {depth})[/green]")
         
         start_time = time.time()
         
@@ -135,16 +166,16 @@ class RichDNSApp:
         duration = time.time() - start_time
         stats = self.engine.get_stats()
         
-        self.console.print(f"[bold green]Scan Complete in {duration:.2f}s![/bold green]")
+        self.console.print(f"[bold green]Scan termine en {duration:.2f}s[/bold green]")
         self.console.print(f"Nodes: {stats['nodes']} | Edges: {stats['edges']}")
         
         # Display Tree
-        self.console.print("\n[bold]Results Map:[/bold]")
+        self.console.print("\n[bold]Carte des resultats:[/bold]")
         tree = self.build_rich_tree(root)
         self.console.print(tree)
 
         # Generate DOT
-        self.console.print("\nGenerating DOT file...")
+        self.console.print("\nGeneration du DOT...")
         if self.generate_dot():
             self.console.print(f"[bold green]Saved ./scan.dot[/bold green]")
 
