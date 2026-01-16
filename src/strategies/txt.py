@@ -19,6 +19,7 @@ class TxtStrategy(Strategy):
     
     def __init__(self):
         self.resolver = dns.resolver.Resolver()
+        self.resolver.lifetime = 2.0
 
     def execute(self, node: Node) -> Generator[Tuple[Node, Edge], None, None]:
         if node.type != NodeType.DOMAIN:
