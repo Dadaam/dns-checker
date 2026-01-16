@@ -4,6 +4,7 @@ from typing import Dict, Iterable, List, Optional, Tuple
 import networkx as nx
 from rich.segment import Segment
 from rich.style import Style
+from textual import events
 from textual.binding import Binding
 from textual.strip import Strip
 from textual.widget import Widget
@@ -13,6 +14,8 @@ from src.models.graph import NodeType
 
 class GraphWidget(Widget):
     """ASCII graph renderer with colored nodes and directed edges."""
+
+    can_focus = True
 
     DEFAULT_CSS = """
     GraphWidget {
@@ -28,6 +31,14 @@ class GraphWidget(Widget):
         Binding("+", "zoom_in", "Zoom In"),
         Binding("-", "zoom_out", "Zoom Out"),
         Binding("r", "recompute_layout", "Re-Layout"),
+        Binding("left", "pan_left", "Pan Left"),
+        Binding("right", "pan_right", "Pan Right"),
+        Binding("up", "pan_up", "Pan Up"),
+        Binding("down", "pan_down", "Pan Down"),
+        Binding("h", "pan_left", "Pan Left"),
+        Binding("l", "pan_right", "Pan Right"),
+        Binding("k", "pan_up", "Pan Up"),
+        Binding("j", "pan_down", "Pan Down"),
     ]
 
     def __init__(self, graph: Optional[nx.DiGraph] = None, root=None, name: str = None, id: str = None, classes: str = None):
@@ -40,7 +51,11 @@ class GraphWidget(Widget):
         self._layout_dirty = True
         self._render_dirty = True
         self._layer_gap = 3
-        self._max_label_width = 48
+        self._max_label_width = 64
+        self._pan_x = 0
+        self._pan_y = 0
+        self._dragging = False
+        self._last_mouse = None
 
     def set_graph(self, graph: nx.DiGraph, root=None):
         self.graph = graph
@@ -79,6 +94,49 @@ class GraphWidget(Widget):
     def action_recompute_layout(self):
         self.recompute_layout()
 
+    def action_pan_left(self):
+        self._pan_x -= 2
+        self._render_dirty = True
+        self.refresh()
+
+    def action_pan_right(self):
+        self._pan_x += 2
+        self._render_dirty = True
+        self.refresh()
+
+    def action_pan_up(self):
+        self._pan_y -= 1
+        self._render_dirty = True
+        self.refresh()
+
+    def action_pan_down(self):
+        self._pan_y += 1
+        self._render_dirty = True
+        self.refresh()
+
+    def on_mouse_down(self, event: events.MouseDown) -> None:
+        if event.button == 1:
+            self.focus()
+            self._dragging = True
+            self._last_mouse = event.screen_offset
+            self.capture_mouse()
+
+    def on_mouse_up(self, event: events.MouseUp) -> None:
+        self._dragging = False
+        self._last_mouse = None
+        self.release_mouse()
+
+    def on_mouse_move(self, event: events.MouseMove) -> None:
+        if not self._dragging or self._last_mouse is None:
+            return
+        dx = event.screen_offset.x - self._last_mouse.x
+        dy = event.screen_offset.y - self._last_mouse.y
+        self._pan_x += dx
+        self._pan_y += dy
+        self._last_mouse = event.screen_offset
+        self._render_dirty = True
+        self.refresh()
+
     def render_line(self, y: int) -> Strip:
         if self._render_dirty or not self._strips:
             self._build_render_cache()
@@ -101,18 +159,19 @@ class GraphWidget(Widget):
         grid = [[(" ", Style()) for _ in range(width)] for _ in range(height)]
 
         edge_style = Style(color="grey50")
-        arrow_style = Style(color="grey70", bold=True)
+        arrow_style = Style(color="bright_white", bold=True)
 
         for source, target in self.graph.edges:
             if source not in self._layout or target not in self._layout:
                 continue
-            sx, sy = self._layout[source]
-            tx, ty = self._layout[target]
+            sx, sy = self._apply_pan(*self._layout[source])
+            tx, ty = self._apply_pan(*self._layout[target])
             self._draw_edge(grid, sx, sy, tx, ty, edge_style, arrow_style)
 
         for node, (x, y) in self._layout.items():
+            x, y = self._apply_pan(x, y)
             style = self._node_style(node)
-            marker = "O" if node == self.root else "o"
+            marker = "@" if node == self.root else "o"
             self._set_cell(grid, x, y, marker, style, force=True)
             label = self._labels.get(node, "")
             if label:
@@ -214,14 +273,7 @@ class GraphWidget(Widget):
         return rank, value
 
     def _node_label(self, node, max_width: int) -> str:
-        label = getattr(node, "value", str(node))
-        if len(label) <= max_width:
-            return label
-        if max_width <= 6:
-            return label[:max_width]
-        head = (max_width - 3) // 2
-        tail = max_width - 3 - head
-        return f"{label[:head]}...{label[-tail:]}"
+        return getattr(node, "value", str(node))
 
     def _node_style(self, node) -> Style:
         ntype = getattr(node, "type", None)
@@ -308,6 +360,9 @@ class GraphWidget(Widget):
         if existing in ("=", "|") and new == existing:
             return existing
         return existing
+
+    def _apply_pan(self, x: int, y: int) -> Tuple[int, int]:
+        return x + self._pan_x, y + self._pan_y
 
     def _set_cell(self, grid, x: int, y: int, char: str, style: Style, force: bool = False):
         if y < 0 or y >= len(grid):
