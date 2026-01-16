@@ -50,7 +50,7 @@ class GraphWidget(Widget):
         self._strips: List[Strip] = []
         self._layout_dirty = True
         self._render_dirty = True
-        self._layer_gap = 4
+        self._layer_gap = 5
         self._max_label_width = 64
         self._pan_x = 0
         self._pan_y = 0
@@ -95,22 +95,22 @@ class GraphWidget(Widget):
         self.recompute_layout()
 
     def action_pan_left(self):
-        self._pan_x += 2
-        self._render_dirty = True
-        self.refresh()
-
-    def action_pan_right(self):
         self._pan_x -= 2
         self._render_dirty = True
         self.refresh()
 
+    def action_pan_right(self):
+        self._pan_x += 2
+        self._render_dirty = True
+        self.refresh()
+
     def action_pan_up(self):
-        self._pan_y += 1
+        self._pan_y -= 1
         self._render_dirty = True
         self.refresh()
 
     def action_pan_down(self):
-        self._pan_y -= 1
+        self._pan_y += 1
         self._render_dirty = True
         self.refresh()
 
@@ -131,8 +131,8 @@ class GraphWidget(Widget):
             return
         dx = event.screen_offset.x - self._last_mouse.x
         dy = event.screen_offset.y - self._last_mouse.y
-        self._pan_x -= dx
-        self._pan_y -= dy
+        self._pan_x += dx
+        self._pan_y += dy
         self._last_mouse = event.screen_offset
         self._render_dirty = True
         self.refresh()
@@ -190,7 +190,7 @@ class GraphWidget(Widget):
 
         layer_gap = max(2, min(self._layer_gap, max(2, (height - 1) // (max_layer + 1))))
         used_height = max_layer * layer_gap + 1
-        top_margin = max(0, (height - used_height) // 2)
+        top_margin = (height - used_height) // 2
 
         by_layer: Dict[int, List[object]] = defaultdict(list)
         for node, layer in layers.items():
@@ -208,17 +208,17 @@ class GraphWidget(Widget):
                 continue
 
             count = len(layer_nodes)
-            cell_width = max(8, min(self._max_label_width + 4, max(8, width // max(1, count))))
-            label_width = max(4, cell_width - 2)
-
+            layer_labels = {node: self._node_label(node, 0) for node in layer_nodes}
+            max_label_len = max((len(label) for label in layer_labels.values()), default=4)
+            cell_width = max(12, max_label_len + 6)
             total_width = cell_width * count
-            start_x = max(0, (width - total_width) // 2)
-            y = min(height - 1, top_margin + layer * layer_gap)
+            start_x = (width - total_width) // 2
+            y = top_margin + layer * layer_gap
 
             for index, node in enumerate(layer_nodes):
                 x = start_x + index * cell_width
                 layout[node] = (x, y)
-                labels[node] = self._node_label(node, label_width)
+                labels[node] = layer_labels[node]
 
         return layout, labels
 
