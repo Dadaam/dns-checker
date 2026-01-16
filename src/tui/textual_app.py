@@ -1,5 +1,5 @@
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Input, Label, Button
+from textual.widgets import Header, Footer, Input, Label, Button, Static
 from textual.containers import Container
 from textual.binding import Binding
 from textual import work
@@ -39,6 +39,14 @@ class DNSTextualApp(App):
         padding-left: 2;
         color: $text-muted;
     }
+
+    #spacer {
+        width: 1fr;
+    }
+
+    #close_button {
+        min-width: 3;
+    }
     """
     
     BINDINGS = [
@@ -67,8 +75,12 @@ class DNSTextualApp(App):
             yield Input(placeholder="example.com", id="domain_input")
             yield Label("Depth:", classes="pad-left")
             yield Input(placeholder="3", value="3", id="depth_input", type="integer")
+            yield Button("-", id="depth_down")
+            yield Button("+", id="depth_up")
             yield Button("Scan", id="scan_button")
             yield Label("Idle", id="stats")
+            yield Static("", id="spacer")
+            yield Button("X", id="close_button", variant="error")
         
         yield GraphWidget(id="graph")
         yield Footer()
@@ -96,6 +108,12 @@ class DNSTextualApp(App):
             depth = self._parse_depth()
             if domain:
                 self.begin_scan(domain, depth)
+        elif event.button.id == "depth_down":
+            self._adjust_depth(-1)
+        elif event.button.id == "depth_up":
+            self._adjust_depth(1)
+        elif event.button.id == "close_button":
+            self.exit()
 
     def begin_scan(self, domain: str, depth: int):
         if self.is_scanning:
@@ -110,9 +128,15 @@ class DNSTextualApp(App):
 
     def _parse_depth(self) -> int:
         try:
-            return int(self.query_one("#depth_input").value)
+            return max(1, int(self.query_one("#depth_input").value))
         except (TypeError, ValueError):
             return 3
+
+    def _adjust_depth(self, delta: int):
+        depth = self._parse_depth() + delta
+        if depth < 1:
+            depth = 1
+        self.query_one("#depth_input", Input).value = str(depth)
 
     @work(exclusive=True, thread=True)
     def start_scan(self, domain: str, depth: int):
