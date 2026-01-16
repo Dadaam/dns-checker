@@ -1,4 +1,4 @@
-pyTermTk
+rich
 dnspython
 pytest
 pyperclip
