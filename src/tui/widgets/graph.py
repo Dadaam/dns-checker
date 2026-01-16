@@ -40,7 +40,7 @@ class GraphWidget(Widget):
         self._layout_dirty = True
         self._render_dirty = True
         self._layer_gap = 3
-        self._max_label_width = 32
+        self._max_label_width = 48
 
     def set_graph(self, graph: nx.DiGraph, root=None):
         self.graph = graph
@@ -217,9 +217,11 @@ class GraphWidget(Widget):
         label = getattr(node, "value", str(node))
         if len(label) <= max_width:
             return label
-        if max_width <= 3:
+        if max_width <= 6:
             return label[:max_width]
-        return f"{label[:max_width - 3]}..."
+        head = (max_width - 3) // 2
+        tail = max_width - 3 - head
+        return f"{label[:head]}...{label[-tail:]}"
 
     def _node_style(self, node) -> Style:
         ntype = getattr(node, "type", None)
@@ -266,7 +268,7 @@ class GraphWidget(Widget):
         start = min(x1, x2)
         end = max(x1, x2)
         for x in range(start, end + 1):
-            self._merge_line(grid, x, y, "-", style)
+            self._merge_line(grid, x, y, "=", style)
 
     def _draw_vertical(self, grid, x: int, y1: int, y2: int, style: Style):
         if x < 0 or x >= len(grid[0]):
@@ -299,11 +301,11 @@ class GraphWidget(Widget):
     def _merge_line_char(self, existing: str, new: str) -> str:
         if existing == " ":
             return new
-        if existing in ("-", "|") and new in ("-", "|") and existing != new:
+        if existing in ("=", "|") and new in ("=", "|") and existing != new:
             return "+"
         if existing == "+" or new == "+":
             return "+"
-        if existing in ("-", "|") and new == existing:
+        if existing in ("=", "|") and new == existing:
             return existing
         return existing
 
