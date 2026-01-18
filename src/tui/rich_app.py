@@ -150,29 +150,14 @@ class RichDNSApp:
         self.console.clear()
         self.console.print(Panel.fit("DNS Scanner", style="bold blue"))
 
+        # Déterminer si nous sommes en mode interactif avant de modifier 'domain'
+        is_interactive = domain is None
+
         if not domain:
             domain = Prompt.ask("Domaine")
         
-        # Si la profondeur est passée par défaut (3) mais que nous sommes en interactif (pas de domaine initial),
-        # on pourrait vouloir demander ? Mais la signature dit default=3.
-        # Supposons que si le domaine a été passé via CLI, la profondeur l'a été aussi.
-        # Si le domaine EST None, nous demandons les deux.
-        if not domain: # Should not happen if Prompt.ask works, but logic structure...
-             pass 
-
-        # En fait, logique plus simple :
-        # Si le domaine est fourni, l'utiliser. Sinon, demander.
-        # Si la profondeur est fournie (par défaut 3 depuis la CLI, argparse gère ça), l'utiliser.
-        # Si interactif, demander la profondeur.
-        
-        # Affinons :
-        # Si appelé depuis la CLI, le domaine sera défini.
-        # Si appelé interactivement (pas d'arguments), le domaine est None.
-        
-        is_interactive = domain is None
-        
+        # Si interactif (aucun argument CLI fourni), demander la profondeur
         if is_interactive:
-            domain = Prompt.ask("Domaine")
             depth = IntPrompt.ask("Profondeur", default=3)
 
         self.console.print(f"\n[green]Scan: {domain} (profondeur {depth})[/green]")
