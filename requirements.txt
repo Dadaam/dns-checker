@@ -1,6 +1,5 @@
 rich
 dnspython
-pyTermTk
 networkx
 pyperclip
 pytest

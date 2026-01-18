@@ -1,6 +1,6 @@
-# Scanner DNS Pur
+# Scanner DNS
 
-Un scanner DNS récursif et modulaire qui repose **exclusivement** sur des requêtes DNS (pas de WHOIS, pas de scraping HTTP). Visualise les résultats dans une interface terminal (TUI) hiérarchique.
+Un scanner DNS récursif et modulaire qui repose **exclusivement** sur des requêtes DNS. Visualise les résultats dans une interface terminal (TUI) hiérarchique, en utilisant rich.tree
 
 ## Fonctionnalités
 
@@ -41,3 +41,5 @@ Ou via la ligne de commande directement :
 ```bash
 python main.py --domain example.com --depth 3
 ```
+
+
