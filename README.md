@@ -4,16 +4,16 @@ Scanner DNS récursif et modulaire qui repose exclusivement sur des requêtes DN
 
 ---
 
-## Table des matieres
+## Table des matières
 
-1. [Presentation](#presentation)
-2. [Fonctionnalites](#fonctionnalites)
+1. [Présentation](#présentation)
+2. [Fonctionnalités](#fonctionnalités)
 3. [Architecture](#architecture)
 4. [Installation](#installation)
 5. [Utilisation](#utilisation)
-6. [Strategies de scan](#strategies-de-scan)
+6. [Stratégies de scan](#stratégies-de-scan)
 7. [Structure du projet](#structure-du-projet)
-8. [Modele de donnees](#modele-de-donnees)
+8. [Modèle de données](#modèle-de-données)
 9. [Export et visualisation](#export-et-visualisation)
 10. [Tests](#tests)
 11. [Limitations connues](#limitations-connues)
@@ -22,57 +22,57 @@ Scanner DNS récursif et modulaire qui repose exclusivement sur des requêtes DN
 
 ---
 
-## Presentation
+## Présentation
 
-DNS-Checker est un outil d'exploration DNS qui permet de cartographier l'infrastructure d'un domaine en effectuant uniquement des requetes DNS.  Contrairement aux outils de reconnaissance classiques, il n'utilise ni WHOIS, ni requetes HTTP, ni scraping web.
+DNS-Checker est un outil d'exploration DNS qui permet de cartographier l'infrastructure d'un domaine en effectuant uniquement des requêtes DNS. Contrairement aux outils de reconnaissance classiques, il n'utilise ni WHOIS, ni requêtes HTTP, ni scraping web.
 
-L'outil fonctionne de maniere recursive :  chaque nouvelle entite decouverte (domaine, adresse IP) devient une nouvelle cible a analyser, jusqu'a atteindre une profondeur maximale configurable.
+L'outil fonctionne de manière récursive : chaque nouvelle entité découverte (domaine, adresse IP) devient une nouvelle cible à analyser, jusqu'à atteindre une profondeur maximale configurable.
 
 ### Cas d'usage
 
-- Audit de securite : identifier les serveurs exposes, les configurations SPF/DMARC
+- Audit de sécurité : identifier les serveurs exposés, les configurations SPF/DMARC
 - Cartographie d'infrastructure : visualiser les relations entre domaines et IPs
-- Analyse forensique : tracer les dependances DNS d'un domaine
-- Apprentissage :  comprendre le fonctionnement du systeme DNS
+- Analyse forensique : tracer les dépendances DNS d'un domaine
+- Apprentissage : comprendre le fonctionnement du système DNS
 
 ---
 
-## Fonctionnalites
+## Fonctionnalités
 
 ### Scan DNS pur
 
 - Interrogation des enregistrements A, AAAA, MX, NS, CNAME, TXT, PTR
-- Aucune dependance a des services externes (WHOIS, APIs tierces)
-- Timeout configurable pour eviter les blocages
+- Aucune dépendance à des services externes (WHOIS, APIs tierces)
+- Timeout configurable pour éviter les blocages
 
-### Exploration recursive
+### Exploration récursive
 
-- Decouverte automatique de nouveaux domaines et IPs
-- Controle de la profondeur de recursion
-- Detection des cycles pour eviter les boucles infinies
+- Découverte automatique de nouveaux domaines et IPs
+- Contrôle de la profondeur de récursion
+- Détection des cycles pour éviter les boucles infinies
 
 ### Analyse intelligente
 
-- Extraction des IPs et domaines caches dans les enregistrements SPF/DMARC
-- Resolution DNS inverse (PTR) pour identifier les hostnames des IPs
-- Deduction des domaines parents
+- Extraction des IPs et domaines cachés dans les enregistrements SPF/DMARC
+- Résolution DNS inverse (PTR) pour identifier les hostnames des IPs
+- Déduction des domaines parents
 
 ### Interface terminal
 
-- Affichage en temps reel avec arbre hierarchique colore
-- Statistiques de scan (noeuds, aretes, duree)
+- Affichage en temps réel avec arbre hiérarchique coloré
+- Statistiques de scan (nœuds, arêtes, durée)
 - Export du graphe au format Graphviz (.dot)
 
 ---
 
 ## Architecture
 
-Le projet suit une architecture modulaire basee sur le pattern Strategy : 
+Le projet suit une architecture modulaire basée sur le pattern Strategy :
 
 ```
                     +------------------+
                     |     main.py      |
-                    | (Point d'entree) |
+                    | (Point d'entrée) |
                     +--------+---------+
                              |
                              v
@@ -100,59 +100,53 @@ Le projet suit une architecture modulaire basee sur le pattern Strategy :
                              v
                     +------------------+
                     |    dnspython     |
-                    | (Requetes DNS)   |
+                    | (Requêtes DNS)   |
                     +------------------+
 ```
 
 ### Composants principaux
 
-| Composant | Role |
+| Composant | Rôle |
 |-----------|------|
-| `main.py` | Point d'entree, parsing des arguments CLI |
-| `ScannerEngine` | Moteur de scan avec algorithme DFS iteratif |
-| `Strategy` | Interface abstraite pour les strategies de scan |
+| `main.py` | Point d'entrée, parsing des arguments CLI |
+| `ScannerEngine` | Moteur de scan avec algorithme DFS itératif |
+| `Strategy` | Interface abstraite pour les stratégies de scan |
 | `RichDNSApp` | Interface utilisateur terminal avec Rich |
-| `Node` / `Edge` | Structures de donnees du graphe |
+| `Node` / `Edge` | Structures de données du graphe |
 
 ---
 
 ## Installation
 
-### Prerequis
+### Prérequis
 
-- Python 3.8 ou superieur
+- Python 3.8 ou supérieur
 - pip (gestionnaire de paquets Python)
 
-### Etapes
+### Étapes
 
-1. Cloner le depot : 
+1. Cloner le dépôt :
    ```bash
    git clone https://github.com/Dadaam/dns-checker.git
    cd dns-checker
    ```
 
-2. Creer un environnement virtuel (recommande) :
+
+
+2. Installer les dépendances :
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # Linux/macOS
-   # ou
-   venv\Scripts\activate     # Windows
+   pip install -r requirements.txt
    ```
 
-3. Installer les dependances :
-   ```bash
-   pip install -r requirements. txt
-   ```
-
-### Dependances
+### Dépendances
 
 | Paquet | Version | Description |
 |--------|---------|-------------|
-| dnspython | >= 2.0 | Bibliotheque de requetes DNS |
-| rich | >= 13.0 | Affichage terminal avance |
+| dnspython | >= 2.0 | Bibliothèque de requêtes DNS |
+| rich | >= 13.0 | Affichage terminal avancé |
 | tldextract | >= 3.0 | Extraction des composants de domaine |
 | networkx | >= 3.0 | Manipulation de graphes |
-| pytest | >= 7.0 | Framework de tests (developpement) |
+| pytest | >= 7.0 | Framework de tests (développement) |
 
 ---
 
@@ -160,35 +154,35 @@ Le projet suit une architecture modulaire basee sur le pattern Strategy :
 
 ### Mode interactif
 
-Lancer le scanner sans arguments pour entrer le domaine et la profondeur de maniere interactive :
+Lancer le scanner sans arguments pour entrer le domaine et la profondeur de manière interactive :
 
 ```bash
 python main.py
 ```
 
-L'application demande alors : 
+L'application demande alors :
 - Le domaine cible
-- La profondeur de recursion (defaut : 3)
+- La profondeur de récursion (défaut : 3)
 
 ### Mode ligne de commande
 
-Specifier directement le domaine et les options :
+Spécifier directement le domaine et les options :
 
 ```bash
 # Scan basique
 python main.py example.com
 
-# Scan avec profondeur personnalisee
+# Scan avec profondeur personnalisée
 python main.py example.com -d 5
 python main.py example.com --depth 5
 ```
 
 ### Options disponibles
 
-| Option | Format court | Description | Defaut |
+| Option | Format court | Description | Défaut |
 |--------|--------------|-------------|--------|
-| `domain` | - | Domaine cible a scanner | (interactif) |
-| `--depth` | `-d` | Profondeur maximale de recursion | 3 |
+| `domain` | - | Domaine cible à scanner | (interactif) |
+| `--depth` | `-d` | Profondeur maximale de récursion | 3 |
 
 ### Exemple de sortie
 
@@ -207,61 +201,61 @@ google.com [DOMAIN]  ROOT
 │   └── A  216.239.32.10 [IP_V4]
 ├── NS  ns2.google.com [DOMAIN]
 ├── MX  smtp.google.com [DOMAIN]
-└── TXT  _spf. google.com [DOMAIN]
+└── TXT  _spf.google.com [DOMAIN]
     └── TXT  _netblocks.google.com [DOMAIN]
 
-Generation du DOT... 
-Saved ./scan. dot
+Generation du DOT...
+Saved ./scan.dot
 ```
 
 ---
 
-## Strategies de scan
+## Stratégies de scan
 
-Le moteur de scan utilise un systeme de strategies modulaires.  Chaque strategie est responsable d'un type d'analyse specifique. 
+Le moteur de scan utilise un système de stratégies modulaires. Chaque stratégie est responsable d'un type d'analyse spécifique.
 
 ### BasicDNSStrategy
 
-Interroge les enregistrements DNS standards. 
+Interroge les enregistrements DNS standards.
 
-| Type d'enregistrement | Description | Resultat |
+| Type d'enregistrement | Description | Résultat |
 |----------------------|-------------|----------|
-| A | Adresse IPv4 | Noeud IP_V4 |
-| AAAA | Adresse IPv6 | Noeud IP_V6 |
-| MX | Serveur de messagerie | Noeud DOMAIN |
-| NS | Serveur de noms | Noeud DOMAIN |
-| CNAME | Alias canonique | Noeud DOMAIN |
-| TXT | Enregistrement texte | Noeud TXT |
+| A | Adresse IPv4 | Nœud IP_V4 |
+| AAAA | Adresse IPv6 | Nœud IP_V6 |
+| MX | Serveur de messagerie | Nœud DOMAIN |
+| NS | Serveur de noms | Nœud DOMAIN |
+| CNAME | Alias canonique | Nœud DOMAIN |
+| TXT | Enregistrement texte | Nœud TXT |
 
 ### TxtStrategy
 
-Analyse le contenu des enregistrements TXT pour extraire des informations cachees. 
+Analyse le contenu des enregistrements TXT pour extraire des informations cachées.
 
-Patterns detectes :
+Patterns détectés :
 - `ip4: X.X.X.X` : Adresses IPv4 dans les enregistrements SPF
 - `ip6:XXXX:... ` : Adresses IPv6 dans les enregistrements SPF
-- `include:domain. com` : Domaines inclus dans SPF
+- `include:domain.com` : Domaines inclus dans SPF
 - `redirect=domain.com` : Redirections SPF
 
-Exemple d'enregistrement SPF analyse :
+Exemple d'enregistrement SPF analysé :
 ```
 v=spf1 ip4:192.168.1.1 include:_spf.google.com ~all
 ```
-Resultat : decouverte de l'IP `192.168.1.1` et du domaine `_spf.google.com`
+Résultat : découverte de l'IP `192.168.1.1` et du domaine `_spf.google.com`
 
 ### PtrStrategy
 
-Effectue des resolutions DNS inverses sur les adresses IP pour retrouver les hostnames associes.
+Effectue des résolutions DNS inverses sur les adresses IP pour retrouver les hostnames associés.
 
 Fonctionnement :
-1. Recoit un noeud de type IP_V4 ou IP_V6
+1. Reçoit un nœud de type IP_V4 ou IP_V6
 2. Convertit l'IP en format in-addr.arpa (ex: `8.8.8.8` devient `8.8.8.8.in-addr.arpa`)
 3. Interroge l'enregistrement PTR
-4. Retourne le hostname associe
+4. Retourne le hostname associé
 
 ### ParentStrategy
 
-Deduit les domaines parents jusqu'au domaine enregistrable.
+Déduit les domaines parents jusqu'au domaine enregistrable.
 
 Exemple :
 ```
@@ -271,18 +265,18 @@ mail.subdomain.example.com
 subdomain.example.com
         |
         v (parent)
-example.com  <- domaine enregistrable, arret
+example.com  <- domaine enregistrable, arrêt
 ```
 
-La strategie utilise `tldextract` pour identifier correctement le suffixe public (TLD) et eviter de scanner les TLD eux-memes (. com, .fr, .co.uk, etc.).
+La stratégie utilise `tldextract` pour identifier correctement le suffixe public (TLD) et éviter de scanner les TLD eux-mêmes (.com, .fr, .co.uk, etc.).
 
-### Ajouter une nouvelle strategie
+### Ajouter une nouvelle stratégie
 
-Pour creer une nouvelle strategie de scan : 
+Pour créer une nouvelle stratégie de scan :
 
-1. Creer un fichier dans `src/strategies/`
-2. Heriter de la classe `Strategy`
-3. Implementer la methode `execute()`
+1. Créer un fichier dans `src/strategies/`
+2. Hériter de la classe `Strategy`
+3. Implémenter la méthode `execute()`
 
 ```python
 from src.strategies.base import Strategy
@@ -294,12 +288,12 @@ class MaStrategie(Strategy):
             return
         
         # Logique de scan
-        nouveau_noeud = Node(value="resultat", type=NodeType. DOMAIN)
-        arete = Edge(source=node, target=nouveau_noeud, type=EdgeType. A)
+        nouveau_noeud = Node(value="resultat", type=NodeType.DOMAIN)
+        arete = Edge(source=node, target=nouveau_noeud, type=EdgeType.A)
         yield nouveau_noeud, arete
 ```
 
-4. Enregistrer la strategie dans `RichDNSApp. register_strategies()`
+4. Enregistrer la stratégie dans `RichDNSApp.register_strategies()`
 
 ---
 
@@ -307,10 +301,10 @@ class MaStrategie(Strategy):
 
 ```
 dns-checker/
-├── main.py                     # Point d'entree CLI
-├── requirements.txt            # Dependances Python
+├── main.py                     # Point d'entrée CLI
+├── requirements.txt            # Dépendances Python
 ├── README.md                   # Documentation
-├── scan.dot                    # Fichier de sortie Graphviz (genere)
+├── scan.dot                    # Fichier de sortie Graphviz (généré)
 │
 ├── src/                        # Code source principal
 │   ├── __init__.py
@@ -319,14 +313,14 @@ dns-checker/
 │   │   ├── __init__.py
 │   │   └── core.py             # Classe ScannerEngine
 │   │
-│   ├── models/                 # Structures de donnees
+│   ├── models/                 # Structures de données
 │   │   ├── __init__.py
-│   │   └── graph. py            # Node, Edge, NodeType, EdgeType
+│   │   └── graph.py            # Node, Edge, NodeType, EdgeType
 │   │
-│   ├── strategies/             # Strategies de scan
-│   │   ├── __init__. py
+│   ├── strategies/             # Stratégies de scan
+│   │   ├── __init__.py
 │   │   ├── base.py             # Classe abstraite Strategy
-│   │   ├── dns. py              # BasicDNSStrategy
+│   │   ├── dns.py              # BasicDNSStrategy
 │   │   ├── txt.py              # TxtStrategy
 │   │   ├── ptr.py              # PtrStrategy
 │   │   └── parents.py          # ParentStrategy
@@ -334,10 +328,8 @@ dns-checker/
 │   └── tui/                    # Interfaces utilisateur
 │       ├── __init__.py
 │       ├── rich_app.py         # Application Rich (principale)
-│       ├── textual_app.py      # Application Textual (alternative)
-│       ├── ttk_app.py          # Application TermTk (alternative)
 │       └── widgets/            # Composants graphiques
-│           ├── graph. py
+│           ├── graph.py
 │           └── ttk_graph.py
 │
 ├── tests/                      # Tests unitaires
@@ -349,23 +341,23 @@ dns-checker/
     └── __init__.py
 ```
 
-### Description des fichiers cles
+### Description des fichiers clés
 
 | Fichier | Lignes | Description |
 |---------|--------|-------------|
-| `src/engine/core.py` | ~70 | Moteur de scan DFS iteratif |
-| `src/models/graph.py` | ~40 | Definitions des noeuds et aretes |
-| `src/strategies/dns.py` | ~50 | Requetes DNS standards |
+| `src/engine/core.py` | ~70 | Moteur de scan DFS itératif |
+| `src/models/graph.py` | ~40 | Définitions des nœuds et arêtes |
+| `src/strategies/dns.py` | ~50 | Requêtes DNS standards |
 | `src/strategies/txt.py` | ~60 | Analyse des enregistrements TXT |
-| `src/strategies/ptr.py` | ~30 | Resolution DNS inverse |
-| `src/strategies/parents.py` | ~40 | Deduction des parents |
+| `src/strategies/ptr.py` | ~30 | Résolution DNS inverse |
+| `src/strategies/parents.py` | ~40 | Déduction des parents |
 | `src/tui/rich_app.py` | ~210 | Interface utilisateur Rich |
 
 ---
 
-## Modele de donnees
+## Modèle de données
 
-### Types de noeuds (NodeType)
+### Types de nœuds (NodeType)
 
 | Type | Description | Exemple |
 |------|-------------|---------|
@@ -374,9 +366,9 @@ dns-checker/
 | IP_V6 | Adresse IPv6 | 2a00:1450:4007:80e::200e |
 | TLD | Top-Level Domain | com |
 | SERVICE | Service SRV | _xmpp._tcp.example.com |
-| TXT | Contenu TXT brut | v=spf1 ...  |
+| TXT | Contenu TXT brut | v=spf1 ... |
 
-### Types d'aretes (EdgeType)
+### Types d'arêtes (EdgeType)
 
 | Type | Description | Source -> Cible |
 |------|-------------|-----------------|
@@ -392,29 +384,29 @@ dns-checker/
 ### Structure des objets
 
 ```python
-# Noeud (immuable)
+# Nœud (immuable)
 @dataclass(frozen=True)
 class Node:
     value: str       # ex: "google.com"
     type: NodeType   # ex:  NodeType.DOMAIN
 
-# Arete (immuable)
+# Arête (immuable)
 @dataclass(frozen=True)
 class Edge:
-    source: Node     # Noeud source
-    target: Node     # Noeud cible
+    source: Node     # Nœud source
+    target: Node     # Nœud cible
     type: EdgeType   # Type de relation
 ```
 
-L'attribut `frozen=True` rend les objets immuables, ce qui permet de les utiliser dans des ensembles (sets) et comme cles de dictionnaires.
+L'attribut `frozen=True` rend les objets immuables, ce qui permet de les utiliser dans des ensembles (sets) et comme clés de dictionnaires.
 
 ---
 
 ## Export et visualisation
 
-### Format Graphviz (. dot)
+### Format Graphviz (.dot)
 
-Apres chaque scan, un fichier `scan.dot` est genere. Ce fichier peut etre converti en image avec Graphviz. 
+Après chaque scan, un fichier `scan.dot` est généré. Ce fichier peut être converti en image avec Graphviz.
 
 Installation de Graphviz :
 ```bash
@@ -434,7 +426,7 @@ Conversion en image :
 dot -Tpng scan.dot -o scan.png
 
 # SVG (vectoriel)
-dot -Tsvg scan.dot -o scan. svg
+dot -Tsvg scan.dot -o scan.svg
 
 # PDF
 dot -Tpdf scan.dot -o scan.pdf
@@ -459,7 +451,7 @@ digraph G {
 }
 ```
 
-### Code couleur des noeuds
+### Code couleur des nœuds
 
 | Type | Couleur |
 |------|---------|
@@ -485,16 +477,16 @@ pytest --cov=src
 # Tests verbeux
 pytest -v
 
-# Un fichier specifique
+# Un fichier spécifique
 pytest tests/test_strategies.py
 ```
 
 ### Structure des tests
 
 - `test_engine.py` : Tests du moteur de scan
-- `test_strategies.py` : Tests des strategies individuelles
+- `test_strategies.py` : Tests des stratégies individuelles
 
-Les tests utilisent des mocks pour simuler les reponses DNS sans effectuer de vraies requetes reseau.
+Les tests utilisent des mocks pour simuler les réponses DNS sans effectuer de vraies requêtes réseau.
 
 ### Exemple de test
 
@@ -503,9 +495,9 @@ def test_txt_strategy():
     strategy = TxtStrategy()
     node = Node("example.com", NodeType.DOMAIN)
     
-    with patch("dns. resolver. Resolver.resolve") as mock_resolve:
+    with patch("dns.resolver.Resolver.resolve") as mock_resolve:
         mock_answer = MagicMock()
-        mock_answer.__str__. return_value = '"v=spf1 include:_spf.google.com ~all"'
+        mock_answer.__str__.return_value = '"v=spf1 include:_spf.google.com ~all"'
         mock_resolve.return_value = [mock_answer]
         
         results = list(strategy.execute(node))
@@ -520,21 +512,21 @@ def test_txt_strategy():
 
 ### Techniques
 
-- **Timeout DNS** : Certains serveurs DNS lents peuvent causer des delais.  Le timeout est fixe a 1-2 secondes par requete.
-- **Rate limiting** : Des scans intensifs peuvent declencher des limites de taux sur certains serveurs DNS.
-- **DNSSEC** : La validation DNSSEC n'est pas implementee. 
+- **Timeout DNS** : Certains serveurs DNS lents peuvent causer des délais. Le timeout est fixé à 1-2 secondes par requête.
+- **Rate limiting** : Des scans intensifs peuvent déclencher des limites de taux sur certains serveurs DNS.
+- **DNSSEC** : La validation DNSSEC n'est pas implémentée.
 
 ### Fonctionnelles
 
-- **Pas de brute-force de sous-domaines** : La strategie existe dans le README original mais n'est pas implementee dans le code actuel.
-- **Pas de scan SRV automatique** : Les enregistrements SRV ne sont pas scannes par defaut.
-- **Pas de scan de voisins IP** : La fonctionnalite de scan des IPs adjacentes n'est pas implementee. 
+- **Pas de brute-force de sous-domaines** : La stratégie existe dans le README original mais n'est pas implémentée dans le code actuel.
+- **Pas de scan SRV automatique** : Les enregistrements SRV ne sont pas scannés par défaut.
+- **Pas de scan de voisins IP** : La fonctionnalité de scan des IPs adjacentes n'est pas implémentée.
 
 ### Performances
 
 - Le scan est synchrone et mono-thread
 - Les grands domaines avec beaucoup de sous-domaines peuvent prendre du temps
-- La profondeur recommandee est 3-5 pour eviter une explosion combinatoire
+- La profondeur recommandée est 3-5 pour éviter une explosion combinatoire
 
 ---
 
@@ -542,17 +534,17 @@ def test_txt_strategy():
 
 ### Signaler un bug
 
-Ouvrir une issue sur GitHub avec : 
-- Description du probleme
-- Etapes pour reproduire
+Ouvrir une issue sur GitHub avec :
+- Description du problème
+- Étapes pour reproduire
 - Sortie du terminal
-- Version de Python et du systeme d'exploitation
+- Version de Python et du système d'exploitation
 
-### Proposer une amelioration
+### Proposer une amélioration
 
-1. Forker le depot
-2. Creer une branche (`git checkout -b feature/ma-fonctionnalite`)
-3. Commiter les modifications (`git commit -am 'Ajout de ma fonctionnalite'`)
+1. Forker le dépôt
+2. Créer une branche (`git checkout -b feature/ma-fonctionnalite`)
+3. Commiter les modifications (`git commit -am 'Ajout de ma fonctionnalité'`)
 4. Pousser la branche (`git push origin feature/ma-fonctionnalite`)
 5. Ouvrir une Pull Request
 
@@ -560,26 +552,26 @@ Ouvrir une issue sur GitHub avec :
 
 - Style PEP 8
 - Docstrings pour les fonctions publiques
-- Tests pour les nouvelles fonctionnalites
+- Tests pour les nouvelles fonctionnalités
 
 ---
 
 ## Licence
 
-Ce projet est distribue sous licence MIT. Voir le fichier `LICENSE` pour plus de details.
+Ce projet est distribué sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
 
 ---
 
 ## Auteur
 
-Projet developpe dans le cadre d'un projet academique.
+Projet développé dans le cadre d'un projet académique.
 
 ---
 
 ## Remerciements
 
-- [dnspython](https://www.dnspython.org/) - Bibliotheque DNS pour Python
-- [Rich](https://rich.readthedocs.io/) - Bibliotheque d'affichage terminal
+- [dnspython](https://www.dnspython.org/) - Bibliothèque DNS pour Python
+- [Rich](https://rich.readthedocs.io/) - Bibliothèque d'affichage terminal
 - [tldextract](https://github.com/john-googgev/tldextract) - Extraction des composants de domaine
 - [NetworkX](https://networkx.org/) - Manipulation de graphes
 - [Graphviz](https://graphviz.org/) - Visualisation de graphes
