@@ -1,38 +1,43 @@
-# Pure DNS Scanner
+# Scanner DNS Pur
 
-A recursive, modular DNS scanner that relies **exclusively** on DNS queries (no WHOIS, no HTTP scraping). Visualizes results in a hierarchical TUI.
+Un scanner DNS récursif et modulaire qui repose **exclusivement** sur des requêtes DNS (pas de WHOIS, pas de scraping HTTP). Visualise les résultats dans une interface terminal (TUI) hiérarchique.
 
-## Features
+## Fonctionnalités
 
-- **Pure DNS**: Uses only standard DNS queries (A, AAAA, MX, NS, PTR, SRV, TXT).
-- **Recursive Scanning**: Finds a new domain/IP -> Scans it immediately.
-- **Strategies**:
-  - **Basic**: Standard records.
-  - **TXT Parsing**: Extracts IPs/Domains from SPF/DMARC.
-  - **SRV Brute-force**: Finds services like `_xmpp`, `_sip`.
-  - **Reverse DNS**: PTR lookups for IPs.
-  - **Parent Deduction**: Crawls up to the registered domain.
-  - **Neighbors**: Scans adjacent IPs (+1/-1).
-  - **Subdomains**: Brute-forces common prefixes.
-- **TUI**: Real-time terminal dashboard with Tree View and Stats.
-- **Graphviz Export**: Exports the discovery graph to `.dot` format.
+- **DNS Pur** : Utilise uniquement des requêtes DNS standard (A, AAAA, MX, NS, PTR, SRV, TXT).
+- **Scan Récursif** : Trouve un nouveau domaine/IP -> Le scanne immédiatement.
+- **Stratégies** :
+  - **Basique** : Enregistrements standard.
+  - **Analyse TXT** : Extrait les IP/Domaines des champs SPF/DMARC.
+  - **Brute-force SRV** : Trouve des services comme `_xmpp`, `_sip`.
+  - **DNS Inverse** : Recherches PTR pour les IP.
+  - **Déduction Parent** : Remonte jusqu'au domaine enregistré.
+  - **Voisins** : Scanne les IP adjacentes (+1/-1).
+  - **Sous-domaines** : Brute-force les préfixes courants.
+- **TUI** : Tableau de bord en temps réel dans le terminal avec vue arborescente et statistiques.
+- **Export Graphviz** : Exporte le graphe de découverte au format `.dot`.
 
 ## Installation
 
-1. Clone the repository.
-2. Install dependencies:
+1. Cloner le dépôt.
+2. Installer les dépendances :
    ```bash
    pip install -r requirements.txt
    ```
 
-## Usage
+## Utilisation
 
-Run the scanner:
+Lancer le scanner :
 ```bash
 python main.py
 ```
 
-- Enter a **Domain**.
-- Set **Depth** (recursion limit).
-- Click **START SCAN**.
-- Use **Export .dot** to save the graph.
+- Entrez un **Domaine**.
+- Définissez la **Profondeur** (limite de récursion).
+- Cliquez sur **START SCAN** (ou Entrée si lancé en CLI).
+- Utilisez **Export .dot** pour sauvegarder le graphe.
+
+Ou via la ligne de commande directement :
+```bash
+python main.py --domain example.com --depth 3
+```
