@@ -7,12 +7,12 @@ from src.strategies.base import Strategy
 
 class NeighborStrategy(Strategy):
     """
-    Checks for contiguous IP neighbors (+1/-1).
-    Validates them via PTR lookup primarily.
+    Vérifie les voisins IP contigus (+1/-1).
+    Les valide via une recherche PTR principalement.
     """
     def __init__(self):
         self.resolver = dns.resolver.Resolver()
-        self.resolver.lifetime = 1.0 # Short timeout for neighbors
+        self.resolver.lifetime = 1.0 # Court délai pour les voisins
 
     def execute(self, node: Node) -> Generator[Tuple[Node, Edge], None, None]:
         if node.type != NodeType.IP_V4:
@@ -20,8 +20,8 @@ class NeighborStrategy(Strategy):
 
         try:
             ip_obj = ipaddress.IPv4Address(node.value)
-            # Naive neighbors: +1 and -1
-            # We must be careful not to generate invalid IPs or broadcast/network
+            # Voisins naïfs : +1 et -1
+            # Nous devons faire attention à ne pas générer d'IP invalides ou broadcast/réseau
             neighbors = []
             if ip_obj > ipaddress.IPv4Address("0.0.0.0"):
                 neighbors.append(ip_obj - 1)
@@ -31,18 +31,18 @@ class NeighborStrategy(Strategy):
             for neighbor_ip in neighbors:
                 neighbor_str = str(neighbor_ip)
                 
-                # Verify logic: Does this neighbor have a PTR?
-                # If so, it's a valid node to add.
+                # Logique de vérification : Ce voisin a-t-il un PTR ?
+                # Si oui, c'est un nœud valide à ajouter.
                 try:
                     addr = dns.reversename.from_address(neighbor_str)
                     _ = self.resolver.resolve(addr, "PTR")
                     
-                    # If PTR exists, we treat it as a found neighbor
+                    # Si le PTR existe, nous le traitons comme un voisin trouvé
                     new_node = Node(value=neighbor_str, type=NodeType.IP_V4)
                     edge = Edge(source=node, target=new_node, type=EdgeType.NEIGHBOR)
                     yield new_node, edge
                 except Exception:
-                    # No PTR, or timeout -> assume not interesting for now
+                    # Pas de PTR, ou délai dépassé -> supposé inintéressant pour l'instant
                     continue
         except Exception:
             pass

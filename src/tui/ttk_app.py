@@ -6,7 +6,7 @@ from src.engine.core import ScannerEngine
 from src.models.graph import Node, NodeType
 from src.tui.widgets.ttk_graph import TTkGraphWidget
 
-# Import strategies
+# Import des stratégies
 from src.strategies.dns import BasicDNSStrategy
 from src.strategies.txt import TxtStrategy
 from src.strategies.ptr import PtrStrategy
@@ -17,17 +17,17 @@ class DNSScannerApp(TTkContainer):
         super().__init__()
         self._root = root
         
-        # Use a grid layout for the main app container
+        # Utilise une grille pour le conteneur principal de l'application
         self.setLayout(TTkGridLayout())
         
-        # Engine Setup
+        # Configuration du Moteur
         self.engine = ScannerEngine(max_depth=3)
         self._register_strategies()
         self.is_scanning = False
         
-        # Layout
-        # Top Bar: Domain, Depth, Scan Button
-        # Wrap in a Container to be added as a widget
+        # Mise en page
+        # Barre supérieure : Domaine, Profondeur, Bouton Scan
+        # Envelopper dans un conteneur à ajouter comme widget
         self.top_container = TTkContainer(maxHeight=3, border=False)
         self.top_layout = TTkHBoxLayout()
         self.top_container.setLayout(self.top_layout)
@@ -46,11 +46,11 @@ class DNSScannerApp(TTkContainer):
         self.btn_scan.clicked.connect(self.start_scan)
         self.top_layout.addWidget(self.btn_scan)
         
-        # Main Graph Area
+        # Zone principale du graphe
         self.graph_widget = TTkGraphWidget()
         self.layout().addWidget(self.graph_widget, 1, 0)
         
-        # Timer for updates
+        # Timer pour les mises à jour
         self._timer_active = True
         self._update_loop()
 
@@ -62,11 +62,11 @@ class DNSScannerApp(TTkContainer):
 
     def _update_loop(self):
         if not self._timer_active: return
-        # Periodic refresh of graph data
+        # Rafraîchissement périodique des données du graphe
         if self.is_scanning or self.engine.nodes:
              import networkx as nx
              G = nx.Graph()
-             # Copy data safely-ish
+             # Copie des données de manière plus ou moins sûre
              try:
                  for node in list(self.engine.nodes):
                      G.add_node(node)
@@ -75,9 +75,9 @@ class DNSScannerApp(TTkContainer):
                  
                  self.graph_widget.setGraph(G)
              except RuntimeError:
-                 pass # Iterator changed size
+                 pass # La taille de l'itérateur a changé
         
-        # Cleanly schedule next
+        # Planifier proprement le suivant
         threading.Timer(1.0, self._update_loop).start()
 
     def start_scan(self):

@@ -6,7 +6,7 @@ from src.strategies.base import Strategy
 
 class PtrStrategy(Strategy):
     """
-    Performs Reverse DNS (PTR) lookups on IP addresses.
+    Effectue des recherches DNS inversées (PTR) sur les adresses IP.
     """
     def __init__(self):
         self.resolver = dns.resolver.Resolver()

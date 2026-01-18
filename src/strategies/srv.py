@@ -5,7 +5,7 @@ from src.strategies.base import Strategy
 
 class SrvStrategy(Strategy):
     """
-    Brute-forces common SRV records to find services.
+    Brute-force les enregistrements SRV courants pour trouver des services.
     """
     
     COMMON_SERVICES = [
@@ -34,23 +34,23 @@ class SrvStrategy(Strategy):
             try:
                 answers = self.resolver.resolve(target, "SRV")
                 for rdata in answers:
-                    # SRV record content: priority weight port target
-                    # We are interested in the target domain and port.
-                    # We can represent this as a SERVICE node? Or just the target domain?
-                    # "target" in SRV is a domain name.
+                    # Contenu de l'enregistrement SRV : priorité poids port cible
+                    # Nous sommes intéressés par le domaine cible et le port.
+                    # Peut-on représenter cela comme un nœud SERVICE ? Ou juste le domaine cible ?
+                    # "target" dans SRV est un nom de domaine.
                     
                     target_domain = str(rdata.target).rstrip('.')
                     port = rdata.port
                     
-                    # Yield the discovered service domain
+                    # Générer le domaine de service découvert
                     new_node = Node(value=target_domain, type=NodeType.DOMAIN)
                     edge = Edge(source=node, target=new_node, type=EdgeType.SRV)
                     yield new_node, edge
                     
-                    # We could also arguably yield a "Service" node like "_xmpp-server._tcp.example.com"
-                    # pointing to "xmpp.example.com", but the graph might get cluttered.
-                    # The prompt asks for "Noeuds... Domaines, IPs, TLDs".
-                    # So linking Domain -> Target Domain via SRV edge is good.
+                    # On pourrait aussi générer un nœud "Service" comme "_xmpp-server._tcp.example.com"
+                    # pointant vers "xmpp.example.com", mais le graphe pourrait devenir encombré.
+                    # La consigne demande "Nœuds... Domaines, IPs, TLDs".
+                    # Donc lier Domaine -> Domaine Cible via une arête SRV est bon.
                     
             except Exception:
                 continue

@@ -7,8 +7,8 @@ class NodeType(Enum):
     IP_V4 = "IP_V4"
     IP_V6 = "IP_V6"
     TLD = "TLD"
-    SERVICE = "SERVICE" # For SRV records
-    TXT = "TXT" # For raw TXT content
+    SERVICE = "SERVICE" # Pour les enregistrements SRV
+    TXT = "TXT" # Pour le contenu brut TXT
 
 class EdgeType(Enum):
     A = "A"
@@ -19,9 +19,9 @@ class EdgeType(Enum):
     PTR = "PTR"
     TXT = "TXT"
     SRV = "SRV"
-    PARENT = "PARENT" # Deduced parent
-    NEIGHBOR = "NEIGHBOR" # IP Neighbor
-    SUBDOMAIN = "SUBDOMAIN" # Brute-forced subdomain
+    PARENT = "PARENT" # Parent déduit
+    NEIGHBOR = "NEIGHBOR" # Voisin IP
+    SUBDOMAIN = "SUBDOMAIN" # Sous-domaine brute-forcé
 
 @dataclass(frozen=True)
 class Node:

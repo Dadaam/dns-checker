@@ -5,7 +5,7 @@ from src.strategies.base import Strategy
 
 class BasicDNSStrategy(Strategy):
     """
-    Scans for standard DNS records: A, AAAA, MX, NS, CNAME, TXT, SOA.
+    Scanne les enregistrements DNS standard : A, AAAA, MX, NS, CNAME, TXT, SOA.
     """
     RECORD_TYPES = {
         'A': (NodeType.IP_V4, EdgeType.A),
@@ -28,19 +28,19 @@ class BasicDNSStrategy(Strategy):
             try:
                 answers = self.resolver.resolve(node.value, rtype)
                 for rdata in answers:
-                    target_value = str(rdata).strip('"') # Clean quotes from TXT
+                    target_value = str(rdata).strip('"') # Nettoie les guillemets des TXT
                     
-                    # Special handling for MX preference
+                    # Traitement spécial pour la préférence MX
                     if rtype == 'MX':
                         target_value = str(rdata.exchange).rstrip('.')
                     
-                    # Special handling for CNAME/NS trailing dot
+                    # Traitement spécial pour le point final CNAME/NS
                     if rtype in ['CNAME', 'NS']:
                         target_value = target_value.rstrip('.')
 
                     new_node = Node(value=target_value, type=target_node_type)
                     
-                    # If it's a TXT record, explicitly set the type to TXT so it can be visualized differently
+                    # Si c'est un enregistrement TXT, définir explicitement le type à TXT pour une visualisation différente
                     if rtype == 'TXT':
                          new_node = Node(value=target_value, type=NodeType.TXT)
 

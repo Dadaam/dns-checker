@@ -5,7 +5,7 @@ from src.strategies.base import Strategy
 
 class SubdomainStrategy(Strategy):
     """
-    Brute-forces common subdomains.
+    Brute-force les sous-domaines courants.
     """
     
     PREFIXES = [
@@ -26,32 +26,24 @@ class SubdomainStrategy(Strategy):
         for prefix in self.PREFIXES:
             subdomain = f"{prefix}.{node.value}"
             try:
-                # Check if A or AAAA exists
+                # Vérifier si A ou AAAA existe
                 _ = self.resolver.resolve(subdomain, "A")
-                # If found, yield it
+                # Si trouvé, le générer
                 new_node = Node(value=subdomain, type=NodeType.DOMAIN)
-                # Technically it's 'found via brute force' but relationship is essentially same as if we found it via CNAME/NS?
-                # Or we can mark edge as PARENT (inverse)? 
-                # Let's say EdgeType.A? No, A points Domain -> IP.
-                # Let's use PARENT but directed from node to subdomain? "node is parent of subdomain".
-                # My EdgeType.PARENT definition was "Deduces parents", source=sub, target=parent.
-                # Here source=parent, target=sub. 
-                # Let's reuse EdgeType.CNAME? No.
-                # Let's add EdgeType.SUBDOMAIN? Or just reuse generic logic.
-                # The user graph spec: "Lignes CNAME, A, NS..."
-                # If we found `www.example.com` from `example.com`, what is the edge?
-                # It's a "Contains" or "Subdomain" relationship.
-                # I'll stick to a generic approach or maybe just yield it as a known node without a strict DNS edge type,
-                # BUT the system requires an Edge.
-                # Let's use a new type SUBDOMAIN if needed, or re-use "PARENT" reversed?
-                # Let's add SUBDOMAIN to EdgeType in models/graph.py if I can edit it? 
-                # I'm avoiding editing models every time.
-                # I'll use EdgeType.CNAME as a placeholder or just generic? 
-                # Wait, usually `www` HAS an A record. The relationship source->target is `example.com` -> `www.example.com`.
-                # This isn't a standard DNS pointer. 
-                # I will create a custom EdgeType.SUBDOMAIN in models/graph.py now for clarity.
+                # Techniquement c'est 'trouvé via brute force' mais la relation est essentiellement la même que si trouvé via CNAME/NS ?
+                # Ou pouvons-nous marquer l'arête comme PARENT (inverse) ?
+                # Disons EdgeType.A ? Non, A pointe Domaine -> IP.
+                # Utilisons PARENT mais dirigé du nœud vers le sous-domaine ? "noeud est parent du sous-domaine".
+                # Ma définition de EdgeType.PARENT était "Déduit les parents", source=sous, cible=parent.
+                # Ici source=parent, cible=sous.
+                # Réutilisons EdgeType.CNAME ? Non.
+                # Ajoutons EdgeType.SUBDOMAIN ? Ou réutilisons logique générique.
+                # La spécification du graphe : "Lignes CNAME, A, NS..."
+                # Si nous trouvons `www.example.com` depuis `example.com`, quelle est l'arête ?
+                # C'est une relation "Contient" ou "Sous-domaine".
+                # Je vais créer un EdgeType.SUBDOMAIN personnalisé pour la clarté.
                 
-                # Check AAAA too? Usually A is enough to prove existence.
+                # Vérifier AAAA aussi ? Généralement A suffit pour prouver l'existence.
                 yield new_node, Edge(source=node, target=new_node, type=EdgeType.SUBDOMAIN)
                 
             except Exception:

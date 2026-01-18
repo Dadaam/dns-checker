@@ -153,21 +153,21 @@ class RichDNSApp:
         if not domain:
             domain = Prompt.ask("Domaine")
         
-        # If depth is passed as default (3) but we are interactive (no domain was passed initially), 
-        # we might want to ask? But the signature says default=3. 
-        # Let's assume if domain was passed via CLI, depth might be too.
-        # If domain IS None, we ask for both.
+        # Si la profondeur est passée par défaut (3) mais que nous sommes en interactif (pas de domaine initial),
+        # on pourrait vouloir demander ? Mais la signature dit default=3.
+        # Supposons que si le domaine a été passé via CLI, la profondeur l'a été aussi.
+        # Si le domaine EST None, nous demandons les deux.
         if not domain: # Should not happen if Prompt.ask works, but logic structure...
              pass 
 
-        # Actually, simpler logic:
-        # If domain is provided, use it. If not, ask.
-        # If depth is provided (from CLI default is 3, but argparse will handle it), use it.
-        # If interactive, ask for depth.
+        # En fait, logique plus simple :
+        # Si le domaine est fourni, l'utiliser. Sinon, demander.
+        # Si la profondeur est fournie (par défaut 3 depuis la CLI, argparse gère ça), l'utiliser.
+        # Si interactif, demander la profondeur.
         
-        # Let's refine:
-        # If called from CLI, domain will be set.
-        # If called interactively (no args), domain is None.
+        # Affinons :
+        # Si appelé depuis la CLI, le domaine sera défini.
+        # Si appelé interactivement (pas d'arguments), le domaine est None.
         
         is_interactive = domain is None
         
@@ -179,11 +179,11 @@ class RichDNSApp:
         
         start_time = time.time()
         
-        # Setup Engine
+        # Configuration du Moteur
         self.engine.max_depth = depth
         root = Node(value=domain, type=NodeType.DOMAIN)
         
-        # Sync Scan
+        # Scan Synchrone
         with self.console.status("Scanning...", spinner="dots"):
              self.engine.scan(root)
              
@@ -193,12 +193,12 @@ class RichDNSApp:
         self.console.print(f"[bold green]Scan termine en {duration:.2f}s[/bold green]")
         self.console.print(f"Nodes: {stats['nodes']} | Edges: {stats['edges']}")
         
-        # Display Tree
+        # Affichage de l'Arbre
         self.console.print("\n[bold]Carte des resultats:[/bold]")
         tree = self.build_rich_tree(root)
         self.console.print(tree)
 
-        # Generate DOT
+        # Génération du DOT
         self.console.print("\nGeneration du DOT...")
         if self.generate_dot():
             self.console.print(f"[bold green]Saved ./scan.dot[/bold green]")
