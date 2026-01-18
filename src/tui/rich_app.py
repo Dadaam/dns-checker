@@ -126,6 +126,8 @@ class RichDNSApp:
             return Style(color="magenta")
         if node.type == NodeType.SERVICE:
             return Style(color="green")
+        if node.type == NodeType.TXT:
+            return Style(color="white", dim=True)
         return Style(color="white")
 
     def _edge_style(self, edge_type: str) -> Style:
@@ -144,12 +146,34 @@ class RichDNSApp:
         }
         return palette.get(edge_type, Style(color="white"))
 
-    def run(self):
+    def run(self, domain: str = None, depth: int = 3):
         self.console.clear()
         self.console.print(Panel.fit("DNS Scanner", style="bold blue"))
 
-        domain = Prompt.ask("Domaine")
-        depth = IntPrompt.ask("Profondeur", default=3)
+        if not domain:
+            domain = Prompt.ask("Domaine")
+        
+        # If depth is passed as default (3) but we are interactive (no domain was passed initially), 
+        # we might want to ask? But the signature says default=3. 
+        # Let's assume if domain was passed via CLI, depth might be too.
+        # If domain IS None, we ask for both.
+        if not domain: # Should not happen if Prompt.ask works, but logic structure...
+             pass 
+
+        # Actually, simpler logic:
+        # If domain is provided, use it. If not, ask.
+        # If depth is provided (from CLI default is 3, but argparse will handle it), use it.
+        # If interactive, ask for depth.
+        
+        # Let's refine:
+        # If called from CLI, domain will be set.
+        # If called interactively (no args), domain is None.
+        
+        is_interactive = domain is None
+        
+        if is_interactive:
+            domain = Prompt.ask("Domaine")
+            depth = IntPrompt.ask("Profondeur", default=3)
 
         self.console.print(f"\n[green]Scan: {domain} (profondeur {depth})[/green]")
         

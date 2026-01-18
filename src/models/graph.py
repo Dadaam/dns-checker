@@ -8,6 +8,7 @@ class NodeType(Enum):
     IP_V6 = "IP_V6"
     TLD = "TLD"
     SERVICE = "SERVICE" # For SRV records
+    TXT = "TXT" # For raw TXT content
 
 class EdgeType(Enum):
     A = "A"
