@@ -19,7 +19,7 @@ class ParentStrategy(Strategy):
         registered_domain = extracted.registered_domain
         
         # Si le nœud actuel est le domaine enregistré, doit-on s'arrêter ou aller au TLD ?
-        # L'utilisateur a dit "ne pas scanner le TLD public lui-même".
+        # On ne doit éviter de scanner le TLD sinon ce sera infini mdr
         # Donc nous scannons jusqu'à atteindre le domaine enregistré.
         
         if not registered_domain:
