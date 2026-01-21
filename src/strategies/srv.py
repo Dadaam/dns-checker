@@ -36,8 +36,6 @@ class SrvStrategy(Strategy):
                 for rdata in answers:
                     # Contenu de l'enregistrement SRV : priorité poids port cible
                     # Nous sommes intéressés par le domaine cible et le port.
-                    # Peut-on représenter cela comme un nœud SERVICE ? Ou juste le domaine cible ?
-                    # "target" dans SRV est un nom de domaine.
                     
                     target_domain = str(rdata.target).rstrip('.')
                     port = rdata.port
@@ -49,8 +47,6 @@ class SrvStrategy(Strategy):
                     
                     # On pourrait aussi générer un nœud "Service" comme "_xmpp-server._tcp.example.com"
                     # pointant vers "xmpp.example.com", mais le graphe pourrait devenir encombré.
-                    # La consigne demande "Nœuds... Domaines, IPs, TLDs".
-                    # Donc lier Domaine -> Domaine Cible via une arête SRV est bon.
                     
             except Exception:
                 continue
