@@ -30,20 +30,10 @@ class SubdomainStrategy(Strategy):
                 _ = self.resolver.resolve(subdomain, "A")
                 # Si trouvé, le générer
                 new_node = Node(value=subdomain, type=NodeType.DOMAIN)
-                # Techniquement c'est 'trouvé via brute force' mais la relation est essentiellement la même que si trouvé via CNAME/NS ?
-                # Ou pouvons-nous marquer l'arête comme PARENT (inverse) ?
-                # Disons EdgeType.A ? Non, A pointe Domaine -> IP.
-                # Utilisons PARENT mais dirigé du nœud vers le sous-domaine ? "noeud est parent du sous-domaine".
-                # Ma définition de EdgeType.PARENT était "Déduit les parents", source=sous, cible=parent.
-                # Ici source=parent, cible=sous.
-                # Réutilisons EdgeType.CNAME ? Non.
-                # Ajoutons EdgeType.SUBDOMAIN ? Ou réutilisons logique générique.
-                # La spécification du graphe : "Lignes CNAME, A, NS..."
-                # Si nous trouvons `www.example.com` depuis `example.com`, quelle est l'arête ?
-                # C'est une relation "Contient" ou "Sous-domaine".
-                # Je vais créer un EdgeType.SUBDOMAIN personnalisé pour la clarté.
+                # Techniquement c'est 'trouvé via brute force' mais la relation est essentiellement la même que si trouvé via CNAME/NS
+                # On créer un EdgeType.SUBDOMAIN personnalisé pour la clarté car c'est pas exactement un parent
                 
-                # Vérifier AAAA aussi ? Généralement A suffit pour prouver l'existence.
+                # On peut Vérifier AAAA aussi ? Généralement A suffit pour prouver l'existence.
                 yield new_node, Edge(source=node, target=new_node, type=EdgeType.SUBDOMAIN)
                 
             except Exception:
