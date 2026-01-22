@@ -1,0 +1,6 @@
+dnspython>=2.4.0
+rich
+networkx
+
+[dev]
+pytest>=7.4.0

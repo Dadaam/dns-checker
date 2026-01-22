@@ -12,8 +12,8 @@ class TxtStrategy(Strategy):
     # Regex pour les motifs courants
     REGEX_IPV4 = r"ip4:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"
     REGEX_IPV6 = r"ip6:([a-fA-F0-9:]+)"
-    REGEX_INCLUDE = r"include:([a-zA-Z0-9.-]+)"
-    REGEX_REDIRECT = r"redirect=([a-zA-Z0-9.-]+)"
+    REGEX_INCLUDE = r"include:([a-zA-Z0-9._-]+)"
+    REGEX_REDIRECT = r"redirect=([a-zA-Z0-9._-]+)"
     # Une regex de domaine simple et large pourrait correspondre à trop de déchets dans les chaînes base64, 
     # donc nous nous concentrons sur des préfixes structurels comme les mécanismes include/redirect/ptr/mx dans SPF.
     
