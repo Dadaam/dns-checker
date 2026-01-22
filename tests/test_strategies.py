@@ -1,4 +1,3 @@
-import pytest
 from unittest.mock import MagicMock, patch
 from src.models.graph import Node, NodeType
 from src.strategies.dns import BasicDNSStrategy

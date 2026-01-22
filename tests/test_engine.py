@@ -1,5 +1,3 @@
-import pytest
-import threading
 from src.engine.core import ScannerEngine
 from src.models.graph import Node, Edge, NodeType, EdgeType
 from src.strategies.base import Strategy
