@@ -1,5 +1,4 @@
 rich
 dnspython
 networkx
-pyperclip
 pytest
